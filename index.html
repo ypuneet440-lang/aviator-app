@@ -1,345 +1,189 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aviator Telegram App</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  
-  <!-- Firebase SDKs (Compat version for simple integration) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <style>
-    body {
-      background-color: #0f1721;
-      color: white;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 15px;
-      text-align: center;
-    }
-    .card {
-      background: #1a2634;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-    .balance-box {
-      font-size: 22px;
-      font-weight: bold;
-      color: #38bdf8;
-    }
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    button {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .btn-deposit { background: #22c55e; color: white; }
-    .btn-withdraw { background: #f97316; color: white; }
-    .btn-action { background: #ef4444; color: white; width: 100%; padding: 12px; font-size: 18px; margin-top: 10px; }
-    .btn-admin { background: #a855f7; color: white; margin-top: 10px; }
-    
-    .tab-content { display: none; }
-    .active { display: block; }
-    
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #0f1721;
-      color: white;
-      text-align: center;
-    }
-    .game-screen {
-      height: 180px;
-      background: #000;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
-      font-weight: bold;
-      color: #22c55e;
-      position: relative;
-    }
-    .qr-img {
-      width: 180px;
-      height: 180px;
-      margin: 10px 0;
-      border-radius: 8px;
-      background: white;
-      padding: 5px;
-    }
-    .welcome-banner {
-      background: #2563eb;
-      color: white;
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviator Mini App</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Firebase App & Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 15px;
+            text-align: center;
+        }
+        .card {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        button {
+            width: 100%;
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #2b2b2b;
+            color: #fff;
+            font-size: 15px;
+        }
+        .support-btn {
+            display: block;
+            background: #229ED9;
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .ref-box {
+            background: #2b2b2b;
+            padding: 8px;
+            border-radius: 6px;
+            word-break: break-all;
+            font-size: 13px;
+            color: #00ff66;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Header & Balance -->
-  <div class="card">
-    <div id="welcome-msg" class="welcome-banner" style="display:none;">🎉 Welcome! ₹10 Bonus Added to your Wallet!</div>
-    <div>Wallet Balance</div>
-    <div class="balance-box">₹<span id="user-balance">0.00</span></div>
-    <div class="btn-group">
-      <button class="btn-deposit" onclick="showTab('deposit-tab')">➕ Deposit</button>
-      <button class="btn-withdraw" onclick="showTab('withdraw-tab')">➖ Withdraw</button>
+    <h2>🚀 Aviator Game</h2>
+
+    <!-- User Wallet Info -->
+    <div class="card">
+        <h3>Wallet Balance: ₹<span id="userBalance">0</span></h3>
+        <p>User ID: <span id="userId">Loading...</span></p>
     </div>
-  </div>
 
-  <!-- Game Section -->
-  <div id="game-tab" class="tab-content active card">
-    <div class="game-screen" id="display">
-      <span id="multiplier">1.00x</span>
+    <!-- Refer & Earn Section -->
+    <div class="card">
+        <h3>🎁 Refer & Earn</h3>
+        <p>Per Refer Bonus: <b>₹100</b></p>
+        <p>Aapka Invite Link:</p>
+        <div class="ref-box" id="refLink">Loading...</div>
     </div>
-    <input type="number" id="bet-amount" value="5" placeholder="Bet Amount (₹)">
-    <button class="btn-action" id="game-btn" onclick="toggleGame()">BET (START)</button>
-    <button class="btn-admin" onclick="showTab('admin-tab')">⚙️ Admin Control Panel</button>
-  </div>
 
-  <!-- Deposit Section -->
-  <div id="deposit-tab" class="tab-content card">
-    <h3>Add Funds (UPI QR)</h3>
-    <p style="font-size: 13px; color: #94a3b8;">Scan & Pay via Google Pay, PhonePe, Paytm</p>
-    
-    <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ypuneet440@okaxis%26pn=Puneet%20Yadav" alt="UPI QR">
-    
-    <p>UPI ID: <b>ypuneet440@okaxis</b></p>
-    <input type="number" id="dep-amount" placeholder="Enter Paid Amount (₹)">
-    <input type="text" id="dep-utr" placeholder="Enter 12-Digit UTR/Ref No.">
-    <button class="btn-deposit" onclick="submitDeposit()">Submit Payment Proof</button>
-    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
-  </div>
+    <!-- Withdrawal Form -->
+    <div class="card">
+        <h3>💸 Withdrawal</h3>
+        <p style="font-size: 12px; color: #aaa;">Minimum Withdrawal: ₹200</p>
+        <input type="number" id="withdrawAmount" placeholder="Enter Amount (Min ₹200)">
+        <input type="text" id="upiId" placeholder="Enter UPI ID">
+        <button onclick="requestWithdrawal()">Submit Withdraw Request</button>
+    </div>
 
-  <!-- Withdraw Section -->
-  <div id="withdraw-tab" class="tab-content card">
-    <h3>Withdraw Funds</h3>
-    <input type="number" id="wd-amount" placeholder="Enter Amount (Min ₹50)">
-    <input type="text" id="wd-upi" placeholder="Enter Your UPI ID">
-    <button class="btn-withdraw" onclick="submitWithdraw()">Submit Withdrawal Request</button>
-    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
-  </div>
+    <!-- Support Button -->
+    <a href="https://t.me/Yadav63070" target="_blank" class="support-btn">
+        🎧 Contact Customer Support
+    </a>
 
-  <!-- Admin Control Panel -->
-  <div id="admin-tab" class="tab-content card">
-    <h3>⚙️ Admin Owner Panel</h3>
-    <p style="font-size: 12px; color: #94a3b8;">Enter Target User ID to change balance:</p>
-    <input type="text" id="admin-target-uid" placeholder="User Telegram ID">
-    <label>Set Wallet Balance (₹):</label>
-    <input type="number" id="admin-set-bal">
-    <button class="btn-deposit" style="margin-bottom: 12px;" onclick="updateBalance()">Update Balance</button>
-    
-    <label>User Win Probability (0.1 = 10%, 0.8 = 80%):</label>
-    <input type="number" step="0.1" id="admin-win-rate" value="0.3">
-    
-    <button class="btn-withdraw" onclick="saveAdminSettings()">Save Settings</button>
-    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
-  </div>
+    <script>
+        // 1. Initialize Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-  <script>
-    // Firebase Config Integrated
-    const firebaseConfig = {
-      apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAlsszD6FCMic",
-      authDomain: "aviator-3b6b1.firebaseapp.com",
-      projectId: "aviator-3b6b1",
-      storageBucket: "aviator-3b6b1.firebasestorage.app",
-      messagingSenderId: "963462673561",
-      appId: "1:963462673561:web:7c9cdc9a68d38c5ce53408",
-      databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com"
-    };
+        const user = tg.initDataUnsafe?.user || { id: "12345678", first_name: "DemoUser" };
+        document.getElementById('userId').innerText = user.id;
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+        // 2. Firebase Configuration (Aapka Firebase Config)
+        const firebaseConfig = {
+            databaseURL: "https://YOUR_FIREBASE_DATABASE_URL.firebaseio.com" // Local Firebase URL replace karein
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc";
-    const ADMIN_CHAT_ID = "6247495377"; 
+        // Refer Link Generate
+        const botUsername = "puneetrashibot";
+        const referralLink = `https://t.me/${botUsername}?start=${user.id}`;
+        document.getElementById('refLink').innerText = referralLink;
 
-    let tg = window.Telegram.WebApp;
-    if(tg) tg.expand();
+        // 3. User Data Fetch & Refer System
+        const userRef = db.ref('users/' + user.id);
+        userRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('userBalance').innerText = data.balance || 0;
+            } else {
+                // New User Registration Setup
+                let startParam = tg.initDataUnsafe?.start_param;
+                let refBonus = 0;
 
-    // User Details
-    let tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
-    let userName = tgUser ? (tgUser.first_name + " " + (tgUser.last_name || "")) : "Guest User";
-    let userId = tgUser ? tgUser.id.toString() : "guest_12345";
-    let userHandle = tgUser && tgUser.username ? ("@" + tgUser.username) : "No Username";
+                // Credit ₹100 to Referrer if valid referral
+                if (startParam && startParam !== user.id.toString()) {
+                    db.ref('users/' + startParam + '/balance').transaction((curr) => {
+                        return (curr || 0) + 100; // ₹100 Referral Bonus
+                    });
+                }
 
-    document.getElementById('admin-target-uid').value = userId;
-
-    let balance = 0.00;
-    let winProbability = 0.3;
-    let isPlaying = false;
-    let timer = null;
-    let currentMultiplier = 1.00;
-
-    // Firebase Realtime Listener for Current User
-    const userRef = db.ref('users/' + userId);
-    userRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        balance = parseFloat(data.balance) || 0.00;
-        winProbability = parseFloat(data.winRate) || 0.3;
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
-        document.getElementById('admin-set-bal').value = balance;
-        document.getElementById('admin-win-rate').value = winProbability;
-      } else {
-        // New User Initialization with ₹10 Welcome Bonus
-        balance = 10.00;
-        userRef.set({
-          name: userName,
-          username: userHandle,
-          balance: balance,
-          winRate: 0.3
+                userRef.set({
+                    name: user.first_name,
+                    balance: 0,
+                    referredBy: startParam || null
+                });
+            }
         });
-        document.getElementById('welcome-msg').style.display = 'block';
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
-        
-        sendTelegramNotification(`🎉 NEW USER JOINED\n\nName: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nBonus Given: ₹10`);
-      }
-    });
 
-    function sendTelegramNotification(textMessage) {
-      let encodedMsg = encodeURIComponent(textMessage);
-      let url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_CHAT_ID}&text=${encodedMsg}`;
-      let img = new Image();
-      img.src = url;
-    }
+        // 4. Minimum Withdrawal Request Logic (₹200 Check)
+        function requestWithdrawal() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            const upi = document.getElementById('upiId').value.trim();
 
-    function saveBalanceToDB(newBal) {
-      balance = newBal;
-      userRef.update({ balance: balance });
-    }
+            if (!amount || amount < 200) {
+                alert("Minimum withdrawal amount is ₹200!");
+                return;
+            }
 
-    function showTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-    }
+            if (!upi) {
+                alert("Kripya sahi UPI ID daalein!");
+                return;
+            }
 
-    function toggleGame() {
-      let btn = document.getElementById('game-btn');
-      let multText = document.getElementById('multiplier');
-      let bet = parseFloat(document.getElementById('bet-amount').value);
+            userRef.child('balance').once('value', (snapshot) => {
+                const currentBalance = snapshot.val() || 0;
+                if (amount > currentBalance) {
+                    alert("Aapke wallet me itna balance nahi hai!");
+                    return;
+                }
 
-      if (!isPlaying) {
-        if (bet > balance || isNaN(bet) || bet <= 0) {
-          alert("Insufficient or Invalid Balance!");
-          return;
+                // Balance Deduct & Request Submit
+                db.ref('withdrawals').push({
+                    userId: user.id,
+                    userName: user.first_name,
+                    amount: amount,
+                    upi: upi,
+                    status: 'pending',
+                    timestamp: Date.now()
+                });
+
+                userRef.update({ balance: currentBalance - amount });
+                alert("Withdrawal request submit ho gayi hai!");
+                document.getElementById('withdrawAmount').value = '';
+                document.getElementById('upiId').value = '';
+            });
         }
-
-        saveBalanceToDB(balance - bet);
-
-        isPlaying = true;
-        btn.innerText = "CASH OUT";
-        btn.style.background = "#22c55e";
-
-        currentMultiplier = 1.00;
-        let isWinRound = Math.random() < winProbability;
-        let crashPoint = isWinRound ? (Math.random() * 3 + 1.5).toFixed(2) : (Math.random() * 0.3 + 1.02).toFixed(2);
-
-        timer = setInterval(() => {
-          currentMultiplier += 0.05;
-          multText.innerText = currentMultiplier.toFixed(2) + 'x';
-
-          if (currentMultiplier >= crashPoint) {
-            clearInterval(timer);
-            multText.innerText = "CRASHED @ " + crashPoint + "x";
-            multText.style.color = "#ef4444";
-            btn.innerText = "BET (START)";
-            btn.style.background = "#ef4444";
-            isPlaying = false;
-            
-            setTimeout(() => { multText.style.color = "#22c55e"; }, 1500);
-          }
-        }, 80);
-
-      } else {
-        clearInterval(timer);
-        let winAmt = bet * currentMultiplier;
-        saveBalanceToDB(balance + winAmt);
-
-        alert("Cashed Out! Won: ₹" + winAmt.toFixed(2));
-        btn.innerText = "BET (START)";
-        btn.style.background = "#ef4444";
-        isPlaying = false;
-      }
-    }
-
-    function submitDeposit() {
-      let amt = document.getElementById('dep-amount').value;
-      let utr = document.getElementById('dep-utr').value;
-      if (!amt || !utr) {
-        alert("Enter Amount and UTR Number!");
-        return;
-      }
-      
-      let msg = `📥 NEW DEPOSIT REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUTR/Ref: ${utr}\nCurrent Balance: ₹${balance}`;
-      
-      sendTelegramNotification(msg);
-      alert("Deposit Request Submitted!");
-      showTab('game-tab');
-    }
-
-    function submitWithdraw() {
-      let amt = parseFloat(document.getElementById('wd-amount').value);
-      let upi = document.getElementById('wd-upi').value;
-      if (amt > balance) {
-        alert("Insufficient Balance!");
-        return;
-      }
-      if (!amt || !upi) {
-        alert("Enter valid Amount & UPI ID!");
-        return;
-      }
-
-      saveBalanceToDB(balance - amt);
-
-      let msg = `📤 NEW WITHDRAWAL REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUPI ID: ${upi}\nRemaining Balance: ₹${balance}`;
-      
-      sendTelegramNotification(msg);
-      alert("Withdrawal Request Submitted!");
-      showTab('game-tab');
-    }
-
-    // Admin Function to Update Any User's Balance
-    function updateBalance() {
-      let targetUid = document.getElementById('admin-target-uid').value.trim();
-      let newBal = parseFloat(document.getElementById('admin-set-bal').value);
-      if (targetUid && !isNaN(newBal)) {
-        db.ref('users/' + targetUid).update({ balance: newBal });
-        alert("Balance Updated for User ID: " + targetUid);
-      } else {
-        alert("Enter Valid User ID & Amount!");
-      }
-    }
-
-    // Admin Function to Save Win Rate Settings
-    function saveAdminSettings() {
-      let targetUid = document.getElementById('admin-target-uid').value.trim();
-      let rate = parseFloat(document.getElementById('admin-win-rate').value);
-      if (targetUid && !isNaN(rate) && rate >= 0 && rate <= 1) {
-        db.ref('users/' + targetUid).update({ winRate: rate });
-        alert("Win Rate Saved for User ID: " + targetUid);
-        showTab('game-tab');
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
