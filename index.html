@@ -3,293 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviator Mini App</title>
-    <!-- Telegram WebApp SDK -->
+    <title>Aviator Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Firebase App & Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 15px;
-            text-align: center;
-        }
-        .card {
-            background: #1e1e1e;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        /* Game Canvas Style */
-        #gameCanvas {
-            background: #000;
-            border: 2px solid #e50914;
-            border-radius: 8px;
-            width: 100%;
-            height: 200px;
-            margin-bottom: 10px;
-        }
-        .multiplier {
-            font-size: 32px;
-            font-weight: bold;
-            color: #00ff66;
-            margin: 10px 0;
-        }
-        button {
-            width: 100%;
-            background: #e50914;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        input {
-            width: 90%;
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background: #2b2b2b;
-            color: #fff;
-            font-size: 15px;
-        }
-        .support-btn {
-            display: block;
-            background: #229ED9;
-            color: white;
-            text-decoration: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            margin-top: 15px;
-        }
-        .ref-box {
-            background: #2b2b2b;
-            padding: 8px;
-            border-radius: 6px;
-            word-break: break-all;
-            font-size: 13px;
-            color: #00ff66;
-            margin-top: 5px;
-        }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; margin: 0; padding: 15px; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
+        #canvas-container { position: relative; width: 100%; height: 180px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .mult { font-size: 30px; font-weight: bold; color: #00ff66; margin: 5px 0; }
+        input { width: 90%; padding: 10px; margin: 6px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; }
+        button { width: 95%; padding: 12px; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; margin-top: 5px; }
+        .btn-bet { background: #e50914; color: #fff; }
+        .btn-support { background: #229ED9; color: #fff; display: block; text-decoration: none; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 10px; }
+        .ref { font-size: 13px; color: #00ff66; word-break: break-all; background: #222; padding: 6px; border-radius: 6px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <h2>🚀 Aviator Game</h2>
 
-    <!-- Game Section -->
     <div class="card">
-        <canvas id="gameCanvas"></canvas>
-        <div class="multiplier" id="multiplierText">1.00x</div>
-        <input type="number" id="betAmount" placeholder="Enter Bet Amount (₹)">
-        <button id="actionBtn" onclick="handleGameAction()">Place Bet</button>
+        <div id="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="mult" id="multText">1.00x</div>
+        <input type="number" id="betVal" placeholder="Bet Amount (₹)">
+        <button id="mainBtn" class="btn-bet" onclick="action()">Place Bet</button>
     </div>
 
-    <!-- User Wallet Info -->
     <div class="card">
-        <h3>Wallet Balance: ₹<span id="userBalance">0</span></h3>
-        <p>User ID: <span id="userId">Loading...</span></p>
+        <h3>Wallet Balance: ₹<span id="bal">0</span></h3>
+        <p style="font-size:12px; color:#aaa;">ID: <span id="uId">...</span></p>
     </div>
 
-    <!-- Refer & Earn Section -->
     <div class="card">
-        <h3>🎁 Refer & Earn</h3>
-        <p>Per Refer Bonus: <b>₹100</b></p>
-        <p>Aapka Invite Link:</p>
-        <div class="ref-box" id="refLink">Loading...</div>
+        <h3>🎁 Refer & Earn (₹100)</h3>
+        <div class="ref" id="refLink">Loading...</div>
     </div>
 
-    <!-- Withdrawal Form -->
     <div class="card">
-        <h3>💸 Withdrawal</h3>
-        <p style="font-size: 12px; color: #aaa;">Minimum Withdrawal: ₹200</p>
-        <input type="number" id="withdrawAmount" placeholder="Enter Amount (Min ₹200)">
-        <input type="text" id="upiId" placeholder="Enter UPI ID">
-        <button onclick="requestWithdrawal()">Submit Withdraw Request</button>
+        <h3>💸 Withdraw (Min ₹200)</h3>
+        <input type="number" id="wAmt" placeholder="Amount (Min ₹200)">
+        <input type="text" id="wUpi" placeholder="UPI ID">
+        <button class="btn-bet" onclick="withdraw()">Submit Request</button>
     </div>
 
-    <!-- Support Button -->
-    <a href="https://t.me/Yadav63070" target="_blank" class="support-btn">
-        🎧 Contact Customer Support
-    </a>
+    <a href="https://t.me/Yadav63070" target="_blank" class="btn-support">🎧 Contact Support</a>
 
     <script>
-        // 1. Initialize Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
+        const user = tg.initDataUnsafe?.user || { id: "1234567", first_name: "User" };
+        document.getElementById('uId').innerText = user.id;
 
-        const user = tg.initDataUnsafe?.user || { id: "12345678", first_name: "DemoUser" };
-        document.getElementById('userId').innerText = user.id;
-
-        // 2. Firebase Configuration
-        const firebaseConfig = {
-            databaseURL: "https://aviator-app-default-rtdb.firebaseio.com"
-        };
+        const firebaseConfig = { databaseURL: "https://aviator-app-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Refer Link Generate
-        const botUsername = "puneetrashibot";
-        const referralLink = `https://t.me/${botUsername}?start=${user.id}`;
-        document.getElementById('refLink').innerText = referralLink;
+        document.getElementById('refLink').innerText = `https://t.me/puneetrashibot?start=${user.id}`;
 
-        let currentBalance = 0;
-
-        // 3. User Data Fetch & Refer System
-        const userRef = db.ref('users/' + user.id);
-        userRef.on('value', (snapshot) => {
-            const data = snapshot.val();
+        let balance = 0;
+        const uRef = db.ref('users/' + user.id);
+        uRef.on('value', (s) => {
+            const data = s.val();
             if (data) {
-                currentBalance = data.balance || 0;
-                document.getElementById('userBalance').innerText = currentBalance;
+                balance = data.balance || 0;
+                document.getElementById('bal').innerText = balance;
             } else {
-                let startParam = tg.initDataUnsafe?.start_param;
-
-                if (startParam && startParam !== user.id.toString()) {
-                    db.ref('users/' + startParam + '/balance').transaction(function(curr) {
-                        return (curr || 0) + 100;
-                    });
+                let refBy = tg.initDataUnsafe?.start_param;
+                if (refBy && refBy !== user.id.toString()) {
+                    db.ref('users/' + refBy + '/balance').transaction(c => (c || 0) + 100);
                 }
-
-                userRef.set({
-                    name: user.first_name,
-                    balance: 0,
-                    referredBy: startParam || null
-                });
+                uRef.set({ name: user.first_name, balance: 0, referredBy: refBy || null });
             }
         });
 
-        // 4. Game Logic & Animation
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let isPlaying = false;
-        let currentMultiplier = 1.00;
-        let gameInterval;
-        let crashMultiplier = 0;
-        let currentBet = 0;
+        // Canvas Setup
+        const cvs = document.getElementById('gameCanvas');
+        const ctx = cvs.getContext('2d');
+        cvs.width = cvs.offsetWidth;
+        cvs.height = cvs.offsetHeight;
 
-        function drawGame(x, y) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let running = false, mult = 1.00, timer, crash = 0, bet = 0;
+
+        function draw(x, y) {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
             ctx.fillStyle = '#e50914';
             ctx.beginPath();
             ctx.arc(x, y, 8, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        function handleGameAction() {
-            const btn = document.getElementById('actionBtn');
-            
-            if (!isPlaying) {
-                // Place Bet
-                const betInput = parseFloat(document.getElementById('betAmount').value);
-                if (!betInput || betInput <= 0) {
-                    alert("Valid bet amount daalein!");
-                    return;
-                }
-                if (betInput > currentBalance) {
-                    alert("Aapke wallet me balance kam hai!");
-                    return;
-                }
+        function action() {
+            const btn = document.getElementById('mainBtn');
+            if (!running) {
+                const input = parseFloat(document.getElementById('betVal').value);
+                if (!input || input <= 0) return alert("Valid amount daalein!");
+                if (input > balance) return alert("Low balance!");
+                
+                bet = input;
+                balance -= bet;
+                uRef.update({ balance: balance });
 
-                currentBet = betInput;
-                currentBalance -= currentBet;
-                userRef.update({ balance: currentBalance });
-
-                isPlaying = true;
+                running = true;
                 btn.innerText = "Cashout";
                 btn.style.background = "#00ff66";
                 btn.style.color = "#000";
+                
+                mult = 1.00;
+                crash = (Math.random() * 3 + 1.1).toFixed(2);
+                let px = 10, py = cvs.height - 20;
 
-                startFly();
+                timer = setInterval(() => {
+                    mult += 0.03;
+                    document.getElementById('multText').innerText = mult.toFixed(2) + 'x';
+                    px += 2; py -= 1;
+                    draw(px, py);
+
+                    if (mult >= crash) {
+                        clearInterval(timer);
+                        document.getElementById('multText').innerText = 'CRASHED! (' + crash + 'x)';
+                        document.getElementById('multText').style.color = '#e50914';
+                        alert("Crash ho gaya!");
+                        reset();
+                    }
+                }, 100);
             } else {
-                // Cashout
-                clearInterval(gameInterval);
-                const winAmount = Math.floor(currentBet * currentMultiplier);
-                currentBalance += winAmount;
-                userRef.update({ balance: currentBalance });
-
-                alert(`Mubarak ho! Aapne ₹${winAmount} jeete!`);
-                resetGame();
+                clearInterval(timer);
+                const win = Math.floor(bet * mult);
+                balance += win;
+                uRef.update({ balance: balance });
+                alert(`Aapne ₹${win} jeete!`);
+                reset();
             }
         }
 
-        function startFly() {
-            currentMultiplier = 1.00;
-            crashMultiplier = (Math.random() * 3 + 1.1).toFixed(2); // Random crash between 1.1x - 4.1x
-            let posX = 10;
-            let posY = canvas.height - 20;
-
-            gameInterval = setInterval(() => {
-                currentMultiplier += 0.03;
-                document.getElementById('multiplierText').innerText = currentMultiplier.toFixed(2) + 'x';
-                
-                posX += 2;
-                posY -= 1;
-                drawGame(posX, posY);
-
-                if (currentMultiplier >= crashMultiplier) {
-                    clearInterval(gameInterval);
-                    document.getElementById('multiplierText').innerText = 'CRASHED! (' + crashMultiplier + 'x)';
-                    document.getElementById('multiplierText').style.color = '#e50914';
-                    alert("Flew away! Aapka bet loss ho gaya.");
-                    resetGame();
-                }
-            }, 100);
-        }
-
-        function resetGame() {
-            isPlaying = false;
-            const btn = document.getElementById('actionBtn');
+        function reset() {
+            running = false;
+            const btn = document.getElementById('mainBtn');
             btn.innerText = "Place Bet";
             btn.style.background = "#e50914";
             btn.style.color = "#fff";
-            document.getElementById('multiplierText').style.color = '#00ff66';
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('multText').style.color = '#00ff66';
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
         }
 
-        // 5. Withdrawal Logic (₹200 Limit)
-        function requestWithdrawal() {
-            const amount = parseFloat(document.getElementById('withdrawAmount').value);
-            const upi = document.getElementById('upiId').value.trim();
+        function withdraw() {
+            const amt = parseFloat(document.getElementById('wAmt').value);
+            const upi = document.getElementById('wUpi').value.trim();
+            if (!amt || amt < 200) return alert("Min withdraw ₹200 hai!");
+            if (!upi) return alert("UPI ID daalein!");
+            if (amt > balance) return alert("Low balance!");
 
-            if (!amount || amount < 200) {
-                alert("Minimum withdrawal amount is ₹200!");
-                return;
-            }
-
-            if (!upi) {
-                alert("Kripya sahi UPI ID daalein!");
-                return;
-            }
-
-            if (amount > currentBalance) {
-                alert("Aapke wallet me itna balance nahi hai!");
-                return;
-            }
-
-            db.ref('withdrawals').push({
-                userId: user.id,
-                userName: user.first_name,
-                amount: amount,
-                upi: upi,
-                status: 'pending',
-                timestamp: Date.now()
-            });
-
-            userRef.update({ balance: currentBalance - amount });
-            alert("Withdrawal request submit ho gayi hai!");
-            document.getElementById('withdrawAmount').value = '';
-            document.getElementById('upiId').value = '';
+            db.ref('withdrawals').push({ userId: user.id, amount: amt, upi: upi, status: 'pending', time: Date.now() });
+            uRef.update({ balance: balance - amt });
+            alert("Withdraw request bhej di gayi hai!");
         }
     </script>
 </body>
