@@ -25,6 +25,21 @@
             margin-bottom: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+        /* Game Canvas Style */
+        #gameCanvas {
+            background: #000;
+            border: 2px solid #e50914;
+            border-radius: 8px;
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+        .multiplier {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff66;
+            margin: 10px 0;
+        }
         button {
             width: 100%;
             background: #e50914;
@@ -71,6 +86,14 @@
 <body>
 
     <h2>🚀 Aviator Game</h2>
+
+    <!-- Game Section -->
+    <div class="card">
+        <canvas id="gameCanvas"></canvas>
+        <div class="multiplier" id="multiplierText">1.00x</div>
+        <input type="number" id="betAmount" placeholder="Enter Bet Amount (₹)">
+        <button id="actionBtn" onclick="handleGameAction()">Place Bet</button>
+    </div>
 
     <!-- User Wallet Info -->
     <div class="card">
@@ -120,20 +143,21 @@
         const referralLink = `https://t.me/${botUsername}?start=${user.id}`;
         document.getElementById('refLink').innerText = referralLink;
 
+        let currentBalance = 0;
+
         // 3. User Data Fetch & Refer System
         const userRef = db.ref('users/' + user.id);
         userRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                document.getElementById('userBalance').innerText = data.balance || 0;
+                currentBalance = data.balance || 0;
+                document.getElementById('userBalance').innerText = currentBalance;
             } else {
-                // New User Registration Setup
                 let startParam = tg.initDataUnsafe?.start_param;
 
-                // Credit ₹100 to Referrer if valid referral
                 if (startParam && startParam !== user.id.toString()) {
                     db.ref('users/' + startParam + '/balance').transaction(function(curr) {
-                        return (curr || 0) + 100; // ₹100 Referral Bonus
+                        return (curr || 0) + 100;
                     });
                 }
 
@@ -145,7 +169,95 @@
             }
         });
 
-        // 4. Minimum Withdrawal Request Logic (₹200 Check)
+        // 4. Game Logic & Animation
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let isPlaying = false;
+        let currentMultiplier = 1.00;
+        let gameInterval;
+        let crashMultiplier = 0;
+        let currentBet = 0;
+
+        function drawGame(x, y) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#e50914';
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function handleGameAction() {
+            const btn = document.getElementById('actionBtn');
+            
+            if (!isPlaying) {
+                // Place Bet
+                const betInput = parseFloat(document.getElementById('betAmount').value);
+                if (!betInput || betInput <= 0) {
+                    alert("Valid bet amount daalein!");
+                    return;
+                }
+                if (betInput > currentBalance) {
+                    alert("Aapke wallet me balance kam hai!");
+                    return;
+                }
+
+                currentBet = betInput;
+                currentBalance -= currentBet;
+                userRef.update({ balance: currentBalance });
+
+                isPlaying = true;
+                btn.innerText = "Cashout";
+                btn.style.background = "#00ff66";
+                btn.style.color = "#000";
+
+                startFly();
+            } else {
+                // Cashout
+                clearInterval(gameInterval);
+                const winAmount = Math.floor(currentBet * currentMultiplier);
+                currentBalance += winAmount;
+                userRef.update({ balance: currentBalance });
+
+                alert(`Mubarak ho! Aapne ₹${winAmount} jeete!`);
+                resetGame();
+            }
+        }
+
+        function startFly() {
+            currentMultiplier = 1.00;
+            crashMultiplier = (Math.random() * 3 + 1.1).toFixed(2); // Random crash between 1.1x - 4.1x
+            let posX = 10;
+            let posY = canvas.height - 20;
+
+            gameInterval = setInterval(() => {
+                currentMultiplier += 0.03;
+                document.getElementById('multiplierText').innerText = currentMultiplier.toFixed(2) + 'x';
+                
+                posX += 2;
+                posY -= 1;
+                drawGame(posX, posY);
+
+                if (currentMultiplier >= crashMultiplier) {
+                    clearInterval(gameInterval);
+                    document.getElementById('multiplierText').innerText = 'CRASHED! (' + crashMultiplier + 'x)';
+                    document.getElementById('multiplierText').style.color = '#e50914';
+                    alert("Flew away! Aapka bet loss ho gaya.");
+                    resetGame();
+                }
+            }, 100);
+        }
+
+        function resetGame() {
+            isPlaying = false;
+            const btn = document.getElementById('actionBtn');
+            btn.innerText = "Place Bet";
+            btn.style.background = "#e50914";
+            btn.style.color = "#fff";
+            document.getElementById('multiplierText').style.color = '#00ff66';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 5. Withdrawal Logic (₹200 Limit)
         function requestWithdrawal() {
             const amount = parseFloat(document.getElementById('withdrawAmount').value);
             const upi = document.getElementById('upiId').value.trim();
@@ -160,28 +272,24 @@
                 return;
             }
 
-            userRef.child('balance').once('value', (snapshot) => {
-                const currentBalance = snapshot.val() || 0;
-                if (amount > currentBalance) {
-                    alert("Aapke wallet me itna balance nahi hai!");
-                    return;
-                }
+            if (amount > currentBalance) {
+                alert("Aapke wallet me itna balance nahi hai!");
+                return;
+            }
 
-                // Balance Deduct & Request Submit
-                db.ref('withdrawals').push({
-                    userId: user.id,
-                    userName: user.first_name,
-                    amount: amount,
-                    upi: upi,
-                    status: 'pending',
-                    timestamp: Date.now()
-                });
-
-                userRef.update({ balance: currentBalance - amount });
-                alert("Withdrawal request submit ho gayi hai!");
-                document.getElementById('withdrawAmount').value = '';
-                document.getElementById('upiId').value = '';
+            db.ref('withdrawals').push({
+                userId: user.id,
+                userName: user.first_name,
+                amount: amount,
+                upi: upi,
+                status: 'pending',
+                timestamp: Date.now()
             });
+
+            userRef.update({ balance: currentBalance - amount });
+            alert("Withdrawal request submit ho gayi hai!");
+            document.getElementById('withdrawAmount').value = '';
+            document.getElementById('upiId').value = '';
         }
     </script>
 </body>
