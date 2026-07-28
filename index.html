@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aviator Telegram App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- Firebase SDKs (Compat version for simple integration) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
   <style>
     body {
       background-color: #0f1721;
@@ -137,6 +142,8 @@
   <!-- Admin Control Panel -->
   <div id="admin-tab" class="tab-content card">
     <h3>⚙️ Admin Owner Panel</h3>
+    <p style="font-size: 12px; color: #94a3b8;">Enter Target User ID to change balance:</p>
+    <input type="text" id="admin-target-uid" placeholder="User Telegram ID">
     <label>Set Wallet Balance (₹):</label>
     <input type="number" id="admin-set-bal">
     <button class="btn-deposit" style="margin-bottom: 12px;" onclick="updateBalance()">Update Balance</button>
@@ -149,51 +156,76 @@
   </div>
 
   <script>
+    // Firebase Config Integrated
+    const firebaseConfig = {
+      apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAlsszD6FCMic",
+      authDomain: "aviator-3b6b1.firebaseapp.com",
+      projectId: "aviator-3b6b1",
+      storageBucket: "aviator-3b6b1.firebasestorage.app",
+      messagingSenderId: "963462673561",
+      appId: "1:963462673561:web:7c9cdc9a68d38c5ce53408",
+      databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc";
     const ADMIN_CHAT_ID = "6247495377"; 
 
     let tg = window.Telegram.WebApp;
     if(tg) tg.expand();
 
-    // User Data from Telegram
+    // User Details
     let tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
     let userName = tgUser ? (tgUser.first_name + " " + (tgUser.last_name || "")) : "Guest User";
-    let userId = tgUser ? tgUser.id : "N/A";
+    let userId = tgUser ? tgUser.id.toString() : "guest_12345";
     let userHandle = tgUser && tgUser.username ? ("@" + tgUser.username) : "No Username";
 
-    // Balance Memory System (localStorage)
-    let balance = parseFloat(localStorage.getItem('aviator_user_balance'));
-    
-    if (isNaN(balance)) {
-      balance = 10.00; // New User Welcome Bonus ₹10
-      localStorage.setItem('aviator_user_balance', balance);
-      document.getElementById('welcome-msg').style.display = 'block';
-      
-      // Send Welcome Notification to Admin
-      sendTelegramNotification(`🎉 New User Joined!\nName: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nBonus Given: ₹10`);
-    }
+    document.getElementById('admin-target-uid').value = userId;
 
-    document.getElementById('user-balance').innerText = balance.toFixed(2);
-    document.getElementById('admin-set-bal').value = balance;
-
-    let winProbability = parseFloat(localStorage.getItem('aviator_win_rate')) || 0.3;
+    let balance = 0.00;
+    let winProbability = 0.3;
     let isPlaying = false;
     let timer = null;
     let currentMultiplier = 1.00;
 
+    // Firebase Realtime Listener for Current User
+    const userRef = db.ref('users/' + userId);
+    userRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        balance = parseFloat(data.balance) || 0.00;
+        winProbability = parseFloat(data.winRate) || 0.3;
+        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        document.getElementById('admin-set-bal').value = balance;
+        document.getElementById('admin-win-rate').value = winProbability;
+      } else {
+        // New User Initialization with ₹10 Welcome Bonus
+        balance = 10.00;
+        userRef.set({
+          name: userName,
+          username: userHandle,
+          balance: balance,
+          winRate: 0.3
+        });
+        document.getElementById('welcome-msg').style.display = 'block';
+        document.getElementById('user-balance').innerText = balance.toFixed(2);
+        
+        sendTelegramNotification(`🎉 NEW USER JOINED\n\nName: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nBonus Given: ₹10`);
+      }
+    });
+
     function sendTelegramNotification(textMessage) {
       let encodedMsg = encodeURIComponent(textMessage);
       let url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_CHAT_ID}&text=${encodedMsg}`;
-      
-      // Send via Image beacon to bypass CORS restrictions
       let img = new Image();
       img.src = url;
     }
 
-    function saveBalanceLocally(newBal) {
+    function saveBalanceToDB(newBal) {
       balance = newBal;
-      localStorage.setItem('aviator_user_balance', balance);
-      document.getElementById('user-balance').innerText = balance.toFixed(2);
+      userRef.update({ balance: balance });
     }
 
     function showTab(tabId) {
@@ -212,7 +244,7 @@
           return;
         }
 
-        saveBalanceLocally(balance - bet);
+        saveBalanceToDB(balance - bet);
 
         isPlaying = true;
         btn.innerText = "CASH OUT";
@@ -241,7 +273,7 @@
       } else {
         clearInterval(timer);
         let winAmt = bet * currentMultiplier;
-        saveBalanceLocally(balance + winAmt);
+        saveBalanceToDB(balance + winAmt);
 
         alert("Cashed Out! Won: ₹" + winAmt.toFixed(2));
         btn.innerText = "BET (START)";
@@ -277,7 +309,7 @@
         return;
       }
 
-      saveBalanceLocally(balance - amt);
+      saveBalanceToDB(balance - amt);
 
       let msg = `📤 NEW WITHDRAWAL REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUPI ID: ${upi}\nRemaining Balance: ₹${balance}`;
       
@@ -286,20 +318,25 @@
       showTab('game-tab');
     }
 
+    // Admin Function to Update Any User's Balance
     function updateBalance() {
+      let targetUid = document.getElementById('admin-target-uid').value.trim();
       let newBal = parseFloat(document.getElementById('admin-set-bal').value);
-      if (!isNaN(newBal)) {
-        saveBalanceLocally(newBal);
-        alert("Balance Updated to ₹" + newBal);
+      if (targetUid && !isNaN(newBal)) {
+        db.ref('users/' + targetUid).update({ balance: newBal });
+        alert("Balance Updated for User ID: " + targetUid);
+      } else {
+        alert("Enter Valid User ID & Amount!");
       }
     }
 
+    // Admin Function to Save Win Rate Settings
     function saveAdminSettings() {
+      let targetUid = document.getElementById('admin-target-uid').value.trim();
       let rate = parseFloat(document.getElementById('admin-win-rate').value);
-      if (!isNaN(rate) && rate >= 0 && rate <= 1) {
-        winProbability = rate;
-        localStorage.setItem('aviator_win_rate', winProbability);
-        alert("Win Rate Saved!");
+      if (targetUid && !isNaN(rate) && rate >= 0 && rate <= 1) {
+        db.ref('users/' + targetUid).update({ winRate: rate });
+        alert("Win Rate Saved for User ID: " + targetUid);
         showTab('game-tab');
       }
     }
