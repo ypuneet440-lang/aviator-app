@@ -108,9 +108,9 @@
         const user = tg.initDataUnsafe?.user || { id: "12345678", first_name: "DemoUser" };
         document.getElementById('userId').innerText = user.id;
 
-        // 2. Firebase Configuration (Aapka Firebase Config)
+        // 2. Firebase Configuration
         const firebaseConfig = {
-            databaseURL: "https://YOUR_FIREBASE_DATABASE_URL.firebaseio.com" // Local Firebase URL replace karein
+            databaseURL: "https://aviator-app-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -129,11 +129,10 @@
             } else {
                 // New User Registration Setup
                 let startParam = tg.initDataUnsafe?.start_param;
-                let refBonus = 0;
 
                 // Credit ₹100 to Referrer if valid referral
                 if (startParam && startParam !== user.id.toString()) {
-                    db.ref('users/' + startParam + '/balance').transaction((curr) => {
+                    db.ref('users/' + startParam + '/balance').transaction(function(curr) {
                         return (curr || 0) + 100; // ₹100 Referral Bonus
                     });
                 }
