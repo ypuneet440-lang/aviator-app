@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Aviator Telegram Mini App</title>
+  <!-- Telegram WebApp Script -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
+    body { background: #0e1621; color: #fff; padding: 12px; display: flex; flex-direction: column; align-items: center; }
+    
+    .user-card { width: 100%; background: #17212b; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #242f3d; }
+    .user-info { font-size: 14px; font-weight: bold; color: #64b5f6; }
+    .balance-box { background: #0f291e; color: #4ade80; padding: 5px 10px; border-radius: 15px; font-weight: bold; }
+
+    .canvas-card { position: relative; width: 100%; height: 230px; background: #0f1721; border-radius: 12px; overflow: hidden; display: flex; justify-content: center; align-items: center; border: 1px solid #242f3d; }
+    canvas { position: absolute; width: 100%; height: 100%; }
+    .multiplier { position: relative; z-index: 5; font-size: 46px; font-weight: 800; color: #38bdf8; }
+    .crashed { color: #ef4444; }
+
+    .control-box { width: 100%; background: #17212b; padding: 15px; border-radius: 12px; margin-top: 12px; border: 1px solid #242f3d; }
+    input { width: 100%; padding: 12px; background: #0e1621; border: 1px solid #242f3d; color: #fff; border-radius: 8px; margin-bottom: 10px; text-align: center; font-size: 16px; }
+
+    .btn { width: 100%; padding: 14px; font-size: 18px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; }
+    .btn-bet { background: #22c55e; color: #fff; }
+    .btn-cashout { background: #eab308; color: #000; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Top User Profile Bar -->
+  <div class="user-card">
+    <div class="user-info" id="userName">User: Loading...</div>
+    <div class="balance-box">₹<span id="balance">1000</span></div>
+  </div>
+
+  <!-- Game Canvas -->
+  <div class="canvas-card">
+    <canvas id="gameCanvas"></canvas>
+    <div class="multiplier" id="multDisplay">1.00x</div>
+  </div>
+
+  <!-- Game Controls -->
+  <div class="control-box">
+    <input type="number" id="betAmount" value="50" min="10">
+    <button class="btn btn-bet" id="betBtn" onclick="placeBet()">BET LAGAYEIN</button>
+    <button class="btn btn-cashout" id="cashoutBtn" onclick="cashOut()">CASH OUT</button>
+  </div>
+
+<script>
+  // Initialize Telegram Mini App SDK
+  const tg = window.Telegram.WebApp;
+  tg.expand(); // Full screen open hoga
+
+  // Telegram User Data Auto Fetch
+  if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    document.getElementById('userName').innerText = tg.initDataUnsafe.user.first_name;
+  } else {
+    document.getElementById('userName').innerText = "Guest Player";
+  }
+
+  let balance = 1000;
+  let currentBet = 0;
+  let multiplier = 1.00;
+  let crashPoint = 0;
+  let interval = null;
+  let inGame = false;
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+  resize();
+
+  function drawPath(p) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!inGame && multiplier === 1.0) return;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    let x = Math.min(canvas.width * (p / 100), canvas.width - 20);
+    let y = canvas.height - Math.min(canvas.height * (p / 100), canvas.height - 20);
+    ctx.quadraticCurveTo(x / 2, canvas.height, x, y);
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fillStyle = '#38bdf8'; ctx.fill();
+  }
+
+  function placeBet() {
+    currentBet = parseFloat(document.getElementById('betAmount').value);
+    if (currentBet > balance || currentBet <= 0) {
+      tg.showAlert("Balance kam hai!");
+      return;
+    }
+
+    balance -= currentBet;
+    document.getElementById('balance').innerText = balance.toFixed(2);
+
+    multiplier = 1.00;
+    crashPoint = (Math.random() * 5 + 1.1).toFixed(2);
+    inGame = true;
+
+    document.getElementById('multDisplay').classList.remove('crashed');
+    document.getElementById('betBtn').style.display = 'none';
+    document.getElementById('cashoutBtn').style.display = 'block';
+
+    let prog = 0;
+    interval = setInterval(() => {
+      multiplier += 0.02 + (multiplier * 0.003);
+      prog += 0.9;
+      document.getElementById('multDisplay').innerText = multiplier.toFixed(2) + 'x';
+      drawPath(prog);
+
+      if (multiplier >= crashPoint) {
+        clearInterval(interval);
+        inGame = false;
+        document.getElementById('multDisplay').innerText = crashPoint + 'x CRASH!';
+        document.getElementById('multDisplay').classList.add('crashed');
+        resetBtns();
+      }
+    }, 60);
+  }
+
+  function cashOut() {
+    if (!inGame) return;
+    clearInterval(interval);
+    inGame = false;
+    let win = currentBet * multiplier;
+    balance += win;
+    document.getElementById('balance').innerText = balance.toFixed(2);
+    tg.showAlert("Aap jeete: ₹" + win.toFixed(2));
+    resetBtns();
+  }
+
+  function resetBtns() {
+    document.getElementById('betBtn').style.display = 'block';
+    document.getElementById('cashoutBtn').style.display = 'none';
+  }
+</script>
+</body>
+</html>
