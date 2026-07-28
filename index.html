@@ -8,17 +8,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; margin: 0; padding: 15px; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
-        #canvas-box { position: relative; width: 100%; height: 180px; background: #000; border-radius: 8px; border: 2px solid #e50914; margin-bottom: 10px; overflow: hidden; }
-        canvas { width: 100%; height: 100%; display: block; }
-        .mult { font-size: 32px; font-weight: bold; color: #00ff66; margin: 5px 0; }
-        input { width: 90%; padding: 10px; margin: 6px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; }
-        button { width: 95%; padding: 12px; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; margin-top: 5px; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; margin: 0; padding: 10px; }
+        .card { background: #1e1e1e; padding: 12px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #333; }
+        #gameCanvas { background: #000; border-radius: 6px; border: 2px solid #e50914; width: 100%; height: 160px; display: block; margin-bottom: 8px; }
+        .mult { font-size: 28px; font-weight: bold; color: #00ff66; margin: 4px 0; }
+        input { width: 90%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; }
+        button { width: 95%; padding: 11px; font-weight: bold; font-size: 15px; border-radius: 6px; border: none; cursor: pointer; margin-top: 4px; }
         .btn-red { background: #e50914; color: #fff; }
         .btn-green { background: #00c853; color: #fff; }
-        .btn-support { background: #229ED9; color: #fff; display: block; text-decoration: none; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 10px; }
-        .ref { font-size: 13px; color: #00ff66; word-break: break-all; background: #222; padding: 6px; border-radius: 6px; margin-top: 5px; }
+        .btn-support { background: #229ED9; color: #fff; display: block; text-decoration: none; font-weight: bold; padding: 11px; border-radius: 6px; margin-top: 10px; }
+        .ref { font-size: 12px; color: #00ff66; word-break: break-all; background: #222; padding: 6px; border-radius: 6px; margin-top: 4px; }
         .admin-card { background: #2d1313; border: 1px solid #ff4444; display: none; }
     </style>
 </head>
@@ -26,38 +25,35 @@
 
     <h2>🚀 Aviator Game</h2>
 
-    <!-- Game Screen -->
+    <!-- Game Card -->
     <div class="card">
-        <div id="canvas-box">
-            <canvas id="gameCanvas"></canvas>
-        </div>
+        <canvas id="gameCanvas" width="300" height="160"></canvas>
         <div class="mult" id="multText">1.00x</div>
         <input type="number" id="betVal" placeholder="Bet Amount (₹)">
         <button id="mainBtn" class="btn-red" onclick="action()">Place Bet</button>
     </div>
 
-    <!-- Wallet Info -->
+    <!-- Wallet Balance -->
     <div class="card">
         <h3>Wallet Balance: ₹<span id="bal">0</span></h3>
-        <p style="font-size:12px; color:#aaa;">ID: <span id="uId">...</span></p>
+        <p style="font-size:11px; color:#aaa; margin:2px 0;">ID: <span id="uId">...</span></p>
     </div>
 
-    <!-- Add Fund / Deposit Section -->
+    <!-- Deposit / Add Fund -->
     <div class="card">
         <h3>💳 Deposit / Add Fund</h3>
-        <p style="font-size: 12px; color: #aaa;">Paytm / UPI QR Par Pay Karke UTR Daalein</p>
         <input type="number" id="depAmt" placeholder="Enter Amount (₹)">
         <input type="text" id="depUtr" placeholder="Enter 12-Digit UTR Number">
         <button class="btn-green" onclick="submitDeposit()">Submit Deposit</button>
     </div>
 
-    <!-- Refer & Earn Section -->
+    <!-- Refer & Earn -->
     <div class="card">
         <h3>🎁 Refer & Earn (₹100)</h3>
         <div class="ref" id="refLink">Loading...</div>
     </div>
 
-    <!-- Withdrawal Section -->
+    <!-- Withdrawal -->
     <div class="card">
         <h3>💸 Withdraw (Min ₹200)</h3>
         <input type="number" id="wAmt" placeholder="Amount (Min ₹200)">
@@ -65,29 +61,28 @@
         <button class="btn-red" onclick="withdraw()">Submit Request</button>
     </div>
 
-    <!-- Admin Panel (Only visible to Admin) -->
+    <!-- Admin Panel -->
     <div class="card admin-card" id="adminPanel">
-        <h3 style="color:#ff4444;">🛠️ Admin Control Panel</h3>
-        <input type="text" id="targetUser" placeholder="Target User Telegram ID">
-        <input type="number" id="addAmt" placeholder="Amount to Add/Deduct">
-        <div style="display:flex; gap:10px; justify-content:center;">
-            <button class="btn-green" style="width:45%;" onclick="adminBalance(true)">+ Add Balance</button>
-            <button class="btn-red" style="width:45%;" onclick="adminBalance(false)">- Deduct</button>
+        <h3 style="color:#ff4444;">🛠️ Admin Panel</h3>
+        <input type="text" id="targetUser" placeholder="Target User ID">
+        <input type="number" id="addAmt" placeholder="Amount">
+        <div style="display:flex; gap:8px; justify-content:center;">
+            <button class="btn-green" style="width:46%;" onclick="adminBalance(true)">+ Add</button>
+            <button class="btn-red" style="width:46%;" onclick="adminBalance(false)">- Deduct</button>
         </div>
     </div>
 
-    <!-- Support Button -->
+    <!-- Support -->
     <a href="https://t.me/Yadav63070" target="_blank" class="btn-support">🎧 Contact Support</a>
 
     <script>
-        const ADMIN_ID = "6247495377"; // Aapka Admin ID Set Hai
+        const ADMIN_ID = "6247495377";
 
         const tg = window.Telegram.WebApp;
         tg.expand();
         const user = tg.initDataUnsafe?.user || { id: "6247495377", first_name: "Puneet" };
         document.getElementById('uId').innerText = user.id;
 
-        // Show Admin Panel if User is Admin
         if (user.id.toString() === ADMIN_ID) {
             document.getElementById('adminPanel').style.display = "block";
         }
@@ -114,40 +109,28 @@
             }
         });
 
-        // Canvas Setup & Curved Graph Animation
         const cvs = document.getElementById('gameCanvas');
         const ctx = cvs.getContext('2d');
-
-        function resizeCanvas() {
-            cvs.width = cvs.offsetWidth;
-            cvs.height = cvs.offsetHeight;
-        }
-        resizeCanvas();
-
         let running = false, mult = 1.00, timer, crash = 0, bet = 0;
         let points = [];
 
         function drawGraph() {
             ctx.clearRect(0, 0, cvs.width, cvs.height);
-            
             if (points.length < 2) return;
 
-            // Draw Red Curved Line
             ctx.beginPath();
             ctx.strokeStyle = '#e50914';
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 3;
             ctx.moveTo(points[0].x, points[0].y);
-
             for (let i = 1; i < points.length; i++) {
                 ctx.lineTo(points[i].x, points[i].y);
             }
             ctx.stroke();
 
-            // Draw Plane Rocket Head
             const last = points[points.length - 1];
             ctx.fillStyle = '#ffcc00';
             ctx.beginPath();
-            ctx.arc(last.x, last.y, 7, 0, Math.PI * 2);
+            ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
             ctx.fill();
         }
 
@@ -168,7 +151,6 @@
                 
                 mult = 1.00;
                 crash = (Math.random() * 3 + 1.1).toFixed(2);
-                
                 points = [{ x: 10, y: cvs.height - 10 }];
 
                 timer = setInterval(() => {
@@ -178,9 +160,8 @@
 
                     let last = points[points.length - 1];
                     let nextX = last.x + 3;
-                    let nextY = cvs.height - 10 - Math.pow(nextX / 15, 1.6);
-
-                    if (nextY < 20) nextY = 20;
+                    let nextY = cvs.height - 10 - Math.pow(nextX / 14, 1.5);
+                    if (nextY < 15) nextY = 15;
                     points.push({ x: nextX, y: nextY });
 
                     drawGraph();
@@ -198,7 +179,7 @@
                 const win = Math.floor(bet * mult);
                 balance += win;
                 uRef.update({ balance: balance });
-                alert(`Mubarak ho! Aapne ₹${win} jeete!`);
+                alert(`Jeet gaye! ₹${win} add ho gaye.`);
                 reset();
             }
         }
@@ -210,59 +191,39 @@
             btn.className = "btn-red";
         }
 
-        // Deposit Functionality
         function submitDeposit() {
             const amt = parseFloat(document.getElementById('depAmt').value);
             const utr = document.getElementById('depUtr').value.trim();
-            if (!amt || amt <= 0) return alert("Sahi deposit amount daalein!");
-            if (!utr || utr.length < 6) return alert("Sahi UTR number daalein!");
+            if (!amt || amt <= 0 || !utr) return alert("Sahi details bharein!");
 
-            db.ref('deposits').push({
-                userId: user.id,
-                userName: user.first_name,
-                amount: amt,
-                utr: utr,
-                status: 'pending',
-                time: Date.now()
-            });
-
-            alert("Deposit request submit ho gayi hai! Verification ke baad balance add ho jayega.");
+            db.ref('deposits').push({ userId: user.id, amount: amt, utr: utr, status: 'pending', time: Date.now() });
+            alert("Deposit request bhej di gayi hai!");
             document.getElementById('depAmt').value = '';
             document.getElementById('depUtr').value = '';
         }
 
-        // Withdrawal Functionality
         function withdraw() {
             const amt = parseFloat(document.getElementById('wAmt').value);
             const upi = document.getElementById('wUpi').value.trim();
-            if (!amt || amt < 200) return alert("Min withdraw ₹200 hai!");
-            if (!upi) return alert("UPI ID daalein!");
+            if (!amt || amt < 200 || !upi) return alert("Min withdraw ₹200 aur UPI ID zaroori hai!");
             if (amt > balance) return alert("Low balance!");
 
             db.ref('withdrawals').push({ userId: user.id, amount: amt, upi: upi, status: 'pending', time: Date.now() });
             uRef.update({ balance: balance - amt });
-            alert("Withdraw request bhej di gayi hai!");
+            alert("Withdraw request submit ho gayi!");
             document.getElementById('wAmt').value = '';
             document.getElementById('wUpi').value = '';
         }
 
-        // Admin Fund Add/Deduct Action
         function adminBalance(isAdd) {
             const target = document.getElementById('targetUser').value.trim();
             const amt = parseFloat(document.getElementById('addAmt').value);
-            if (!target || !amt || amt <= 0) return alert("Target User ID aur Valid Amount daalein!");
+            if (!target || !amt) return alert("ID aur Amount bharein!");
 
-            const tRef = db.ref('users/' + target + '/balance');
-            tRef.transaction((curr) => {
-                let currentBal = curr || 0;
-                return isAdd ? (currentBal + amt) : Math.max(0, currentBal - amt);
-            }, (error, committed) => {
-                if (committed) {
-                    alert(`Balance successfully ${isAdd ? 'Added' : 'Deducted'}!`);
-                    document.getElementById('addAmt').value = '';
-                } else {
-                    alert("Failed to update balance!");
-                }
+            db.ref('users/' + target + '/balance').transaction((curr) => {
+                return isAdd ? ((curr || 0) + amt) : Math.max(0, (curr || 0) - amt);
+            }, (err, committed) => {
+                if (committed) alert("Success!");
             });
         }
     </script>
