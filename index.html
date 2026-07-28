@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -170,7 +170,7 @@
       document.getElementById('welcome-msg').style.display = 'block';
       
       // Send Welcome Notification to Admin
-      sendTelegramNotification(`🎉 *New User Joined!*\n\n👤 Name: ${userName}\n🆔 ID: \`${userId}\`\n🏷️ Username: ${userHandle}\n💰 Bonus Given: ₹10`);
+      sendTelegramNotification(`🎉 New User Joined!\nName: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nBonus Given: ₹10`);
     }
 
     document.getElementById('user-balance').innerText = balance.toFixed(2);
@@ -182,16 +182,12 @@
     let currentMultiplier = 1.00;
 
     function sendTelegramNotification(textMessage) {
-      let url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: ADMIN_CHAT_ID,
-          text: textMessage,
-          parse_mode: 'Markdown'
-        })
-      }).catch(err => console.error(err));
+      let encodedMsg = encodeURIComponent(textMessage);
+      let url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_CHAT_ID}&text=${encodedMsg}`;
+      
+      // Send via Image beacon to bypass CORS restrictions
+      let img = new Image();
+      img.src = url;
     }
 
     function saveBalanceLocally(newBal) {
@@ -262,10 +258,10 @@
         return;
       }
       
-      let msg = `📥 *NEW DEPOSIT REQUEST*\n\n👤 User: ${userName}\n🆔 ID: \`${userId}\`\n🏷️ Username: ${userHandle}\n💵 Amount: ₹${amt}\n🔢 UTR/Ref: \`${utr}\`\n💼 Current Balance: ₹${balance}`;
-      sendTelegramNotification(msg);
+      let msg = `📥 NEW DEPOSIT REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUTR/Ref: ${utr}\nCurrent Balance: ₹${balance}`;
       
-      alert("Deposit Request Submitted! Admin ko instant notification bhej diya hai.");
+      sendTelegramNotification(msg);
+      alert("Deposit Request Submitted!");
       showTab('game-tab');
     }
 
@@ -283,9 +279,9 @@
 
       saveBalanceLocally(balance - amt);
 
-      let msg = `📤 *NEW WITHDRAWAL REQUEST*\n\n👤 User: ${userName}\n🆔 ID: \`${userId}\`\n🏷️ Username: ${userHandle}\n💵 Amount: ₹${amt}\n💳 UPI ID: \`${upi}\`\n💼 Remaining Balance: ₹${balance}`;
+      let msg = `📤 NEW WITHDRAWAL REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUPI ID: ${upi}\nRemaining Balance: ₹${balance}`;
+      
       sendTelegramNotification(msg);
-
       alert("Withdrawal Request Submitted!");
       showTab('game-tab');
     }
