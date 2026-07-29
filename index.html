@@ -1,81 +1,93 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviator Mini App</title>
+    <title>Aviator Ad-To-Earn Game</title>
     
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <!-- Firebase SDK (Realtime Database) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <!-- Adsgram SDK (Telegram Native Ads) -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-
-    <!-- MONETAG SDK SCRIPT (Aapka Exact Script & Zone ID Setup) -->
+    
+    <!-- MONETAG SDK -->
     <script src='//libtl.com/sdk.js' data-zone='11447350' data-sdk='show_11447350'></script>
 
     <style>
-        body {
-            background-color: #0f172a;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .wallet-card {
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        .balance {
-            font-size: 24px;
-            color: #22c55e;
-            font-weight: bold;
-        }
-        .ad-btn {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-            border: none;
-            padding: 14px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            max-width: 300px;
-            margin-top: 15px;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-        }
-        .ad-btn:active {
-            transform: scale(0.98);
-        }
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #0f172a; color: white; margin: 0; padding: 15px; text-align: center; }
+        
+        .nav-tabs { display: flex; justify-content: space-around; background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+        .tab-btn { background: none; border: none; color: #94a3b8; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .tab-btn.active { color: #38bdf8; border-bottom: 2px solid #38bdf8; }
+
+        .card { background: #1e293b; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .balance-text { font-size: 22px; color: #22c55e; font-weight: bold; }
+
+        #gameCanvas { background: #020617; border-radius: 10px; width: 100%; height: 200px; border: 1px solid #334155; }
+        .multiplier { font-size: 32px; font-weight: bold; margin: 10px 0; color: #38bdf8; }
+        .crashed { color: #ef4444; }
+
+        .btn { border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-bet { background: #22c55e; color: white; }
+        .btn-cashout { background: #eab308; color: black; }
+        .btn-ad { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .btn-withdraw { background: #3b82f6; color: white; }
+
+        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; margin-top: 8px; }
+        .page { display: none; }
+        .page.active { display: block; }
     </style>
 </head>
 <body>
 
-    <h2>✈️ Aviator Crash Game</h2>
-
-    <!-- User Wallet Section -->
-    <div class="wallet-card">
-        <div>Aapka Coin Balance:</div>
-        <div id="coinBalance" class="balance">0 Coins</div>
-        <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">(100 Coins = ₹0.10)</div>
+    <!-- Tab Navigation -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('gamePage', this)">✈️ Game</button>
+        <button class="tab-btn" onclick="switchTab('withdrawPage', this)">💳 Withdraw</button>
+        <button class="tab-btn" onclick="switchTab('adminPage', this)">⚙️ Admin</button>
     </div>
 
-    <!-- Manual Watch Ad Button -->
-    <button class="ad-btn" onclick="triggerAdFromGame()">
-        🎥 Watch Ad (+100 Coins)
-    </button>
+    <!-- User Balance Info -->
+    <div class="card">
+        <div>Total Balance:</div>
+        <div id="coinBalance" class="balance-text">0.0 Coins</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">(100 Coins = ₹0.10)</div>
+    </div>
+
+    <!-- PAGE 1: AVIATOR GAME -->
+    <div id="gamePage" class="page active">
+        <div class="card">
+            <canvas id="gameCanvas"></canvas>
+            <div id="multiDisplay" class="multiplier">1.00x</div>
+            <input type="number" id="betAmount" value="50" placeholder="Bet Amount (Coins)">
+            <button id="actionBtn" class="btn btn-bet" onclick="handleGameAction()">BET</button>
+        </div>
+        <button class="btn btn-ad" onclick="triggerAdFromGame()">🎥 Watch Ad (+100 Coins)</button>
+    </div>
+
+    <!-- PAGE 2: WITHDRAWAL -->
+    <div id="withdrawPage" class="page">
+        <div class="card">
+            <h3>Withdraw Earnings</h3>
+            <p style="font-size: 12px; color: #94a3b8;">Minimum Withdrawal: 1,000 Coins (₹1.00)</p>
+            <input type="text" id="upiId" placeholder="Enter UPI ID (e.g. 9876543210@paytm)">
+            <input type="number" id="withdrawCoins" placeholder="Coins to withdraw">
+            <button class="btn btn-withdraw" onclick="submitWithdrawal()">Request Withdrawal</button>
+        </div>
+    </div>
+
+    <!-- PAGE 3: ADMIN PANEL -->
+    <div id="adminPage" class="page">
+        <div class="card">
+            <h3>Admin Game Control</h3>
+            <label style="font-size:12px;">Next Target Crash Multiplier:</label>
+            <input type="number" id="targetCrashInput" value="2.00" step="0.10">
+            <button class="btn btn-bet" onclick="setTargetCrash()">Set Target Multiplier</button>
+        </div>
+    </div>
 
     <script>
-        // FIREBASE CONFIGURATION (Yahan apni firebase details daalein)
         const firebaseConfig = {
             apiKey: "YOUR_FIREBASE_API_KEY",
             authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -86,83 +98,168 @@
             appId: "YOUR_APP_ID"
         };
         
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // Telegram User Identification
         const tg = window.Telegram.WebApp;
         tg.expand();
-        const userId = tg.initDataUnsafe?.user?.id || "test_user_123";
+        
+        // Telegram User Profile Data
+        const user = tg.initDataUnsafe?.user || {};
+        const userId = user.id ? user.id.toString() : "puneet_test_user";
+        const firstName = user.first_name || "New";
+        const username = user.username ? "@" + user.username : "No Username";
 
-        const ADSGRAM_BLOCK_ID = "YOUR_ADSGRAM_BLOCK_ID"; 
-        let adRotatorIndex = 0;
+        // TELEGRAM BOT NOTIFICATION CONFIG (Apna Bot Token aur Admin Chat ID yahan daalein)
+        const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"; 
+        const ADMIN_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"; 
 
-        // Sync Balance
-        db.ref('users/' + userId + '/coins').on('value', (snapshot) => {
-            const coins = snapshot.val() || 0;
-            document.getElementById('coinBalance').innerText = `${coins.toFixed(1)} Coins`;
+        function sendTelegramAlert(message) {
+            if (BOT_TOKEN === "YOUR_TELEGRAM_BOT_TOKEN") return;
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown' })
+            }).catch(err => console.log(err));
+        }
+
+        // Check New User Registration & Notify Admin
+        const userRef = db.ref('users/' + userId);
+        userRef.once('value').then((snapshot) => {
+            if (!snapshot.exists()) {
+                // First time join
+                userRef.set({
+                    coins: 100, // Welcome bonus
+                    name: firstName,
+                    username: username,
+                    joinedAt: new Date().toISOString()
+                });
+                sendTelegramAlert(`🚨 *New User Joined!* \n👤 Name: ${firstName} \n🔗 Username: ${username} \n🆔 ID: \`${userId}\``);
+            }
         });
 
-        // AD TRIGGER SYSTEM
-        function triggerAdFromGame() {
-            if (adRotatorIndex === 0) {
-                showMonetagAd();
-                adRotatorIndex = 1;
-            } else {
-                showAdsgramAd();
-                adRotatorIndex = 0;
+        let userCoins = 0;
+        let isPlaying = false;
+        let isCashedOut = false;
+        let currentMultiplier = 1.00;
+        let targetCrash = 2.00;
+        let gameInterval = null;
+        let currentBet = 0;
+
+        db.ref('users/' + userId + '/coins').on('value', (snap) => {
+            userCoins = snap.val() || 0;
+            document.getElementById('coinBalance').innerText = `${userCoins.toFixed(1)} Coins`;
+        });
+
+        db.ref('gameSettings/targetCrash').on('value', (snap) => {
+            if (snap.val()) targetCrash = snap.val();
+        });
+
+        function switchTab(pageId, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        function drawCanvas(xRatio, yRatio, isCrash = false) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.moveTo(10, canvas.height - 10);
+            ctx.quadraticCurveTo(canvas.width / 2, canvas.height - 10, canvas.width - 20, canvas.height - (yRatio * (canvas.height - 30)));
+            ctx.strokeStyle = isCrash ? '#ef4444' : '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+
+        function handleGameAction() {
+            const btn = document.getElementById('actionBtn');
+            const betInput = parseInt(document.getElementById('betAmount').value);
+
+            if (!isPlaying) {
+                if (betInput > userCoins) {
+                    tg.showAlert("Coins kam hain! Pehle Ad dekh kar coins earn karein.");
+                    return;
+                }
+                currentBet = betInput;
+                db.ref('users/' + userId + '/coins').set(userCoins - currentBet);
+
+                isPlaying = true;
+                isCashedOut = false;
+                currentMultiplier = 1.00;
+                btn.innerText = "CASHOUT";
+                btn.className = "btn btn-cashout";
+                startPlaneFlight();
+            } else if (isPlaying && !isCashedOut) {
+                isCashedOut = true;
+                const winCoins = currentBet * currentMultiplier;
+                db.ref('users/' + userId + '/coins').set(userCoins + winCoins);
+                tg.showAlert(`🎉 Cashout Success! +${winCoins.toFixed(1)} Coins`);
+                btn.innerText = "CASHED OUT";
+                btn.style.opacity = "0.6";
             }
         }
 
-        // Monetag Exact Ad Show Function
-        function showMonetagAd() {
+        function startPlaneFlight() {
+            const multiDisplay = document.getElementById('multiDisplay');
+            multiDisplay.classList.remove('crashed');
+
+            gameInterval = setInterval(() => {
+                currentMultiplier += 0.03;
+                multiDisplay.innerText = `${currentMultiplier.toFixed(2)}x`;
+                drawCanvas(currentMultiplier / targetCrash, (currentMultiplier - 1) / (targetCrash - 1));
+
+                if (currentMultiplier >= targetCrash) {
+                    clearInterval(gameInterval);
+                    multiDisplay.innerText = `CRASHED @ ${targetCrash.toFixed(2)}x`;
+                    multiDisplay.classList.add('crashed');
+                    drawCanvas(1, 1, true);
+
+                    isPlaying = false;
+                    const btn = document.getElementById('actionBtn');
+                    btn.innerText = "BET";
+                    btn.className = "btn btn-bet";
+                    btn.style.opacity = "1";
+                }
+            }, 100);
+        }
+
+        function triggerAdFromGame() {
             if (typeof show_11447350 === 'function') {
                 show_11447350().then(() => {
-                    creditCoins(userId);
+                    db.ref('users/' + userId + '/coins').set(userCoins + 100);
+                    tg.showAlert("🎉 100 Coins added!");
                 }).catch(() => {
-                    alert("Ad poora nahi dekha gaya!");
+                    tg.showAlert("Ad not completed!");
                 });
             } else {
-                showAdsgramAd();
+                db.ref('users/' + userId + '/coins').set(userCoins + 100);
             }
         }
 
-        // Adsgram Ad Show
-        function showAdsgramAd() {
-            if (window.Adsgram) {
-                const AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
-                AdController.show().then(() => {
-                    creditCoins(userId);
-                }).catch(() => {
-                    console.log("Adsgram Ad closed or failed");
-                });
-            } else {
-                creditCoins(userId);
+        function submitWithdrawal() {
+            const upi = document.getElementById('upiId').value;
+            const coins = parseInt(document.getElementById('withdrawCoins').value);
+
+            if (!upi || coins < 1000 || coins > userCoins) {
+                tg.showAlert("Invalid UPI ID or insufficient balance (Min 1,000 Coins).");
+                return;
             }
+
+            db.ref('users/' + userId + '/coins').set(userCoins - coins);
+            
+            // Send Withdrawal Alert to Admin Telegram
+            sendTelegramAlert(`💸 *New Withdrawal Request!*\n👤 User: ${firstName} (${username})\n💳 UPI: \`${upi}\`\n🪙 Coins: ${coins} (₹${(coins/10000).toFixed(2)})`);
+
+            tg.showAlert("Withdrawal request submitted successfully!");
         }
 
-        // COIN CREDIT & REFERRAL LOGIC
-        function creditCoins(uId) {
-            const REWARD_COINS = 100;
-            const userRef = db.ref('users/' + uId);
-
-            userRef.transaction((user) => {
-                if (!user) {
-                    user = { coins: 0, adViews: 0 };
-                }
-                user.coins = (user.coins || 0) + REWARD_COINS;
-                user.adViews = (user.adViews || 0) + 1;
-
-                if (user.referredBy) {
-                    const commission = REWARD_COINS * 0.005; 
-                    db.ref('users/' + user.referredBy + '/coins').transaction(c => (c || 0) + commission);
-                }
-                return user;
-            }).then(() => {
-                tg.showAlert("🎉 Sabhash! 100 Coins aapke wallet me add ho gaye hain.");
-            });
+        function setTargetCrash() {
+            const target = parseFloat(document.getElementById('targetCrashInput').value);
+            db.ref('gameSettings/targetCrash').set(target);
+            tg.showAlert(`Next crash multiplier set to ${target}x`);
         }
     </script>
 </body>
