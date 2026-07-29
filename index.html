@@ -1,613 +1,169 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aviator Telegram App</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <style>
-    body {
-      background-color: #0f1721;
-      color: white;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 12px;
-      text-align: center;
-      overflow-x: hidden;
-    }
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #1a2634;
-      padding: 10px 15px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-    .profile-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #2563eb;
-      padding: 6px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-    }
-    .card {
-      background: #1a2634;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-    .balance-box {
-      font-size: 20px;
-      font-weight: bold;
-      color: #38bdf8;
-    }
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    button {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .btn-deposit { background: #22c55e; color: white; }
-    .btn-withdraw { background: #f97316; color: white; }
-    .btn-action { background: #ef4444; color: white; width: 100%; padding: 12px; font-size: 18px; margin-top: 10px; }
-    .btn-admin { background: #a855f7; color: white; margin-top: 10px; width: 100%; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviator Mini App</title>
     
-    .tab-content { display: none; }
-    .active { display: block; }
-    
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #0f1721;
-      color: white;
-      text-align: center;
-    }
-    
-    /* Game Canvas Screen */
-    .game-container {
-      position: relative;
-      width: 100%;
-      height: 180px;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 2px solid #ef4444;
-    }
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    .mult-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 34px;
-      font-weight: bold;
-      color: #22c55e;
-      pointer-events: none;
-    }
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    /* Floating Coins Animation */
-    .coin {
-      position: absolute;
-      font-size: 24px;
-      pointer-events: none;
-      animation: popCoin 1s ease-out forwards;
-    }
-    @keyframes popCoin {
-      0% { transform: translateY(0) scale(0.5); opacity: 1; }
-      100% { transform: translateY(-80px) scale(1.3); opacity: 0; }
-    }
+    <!-- Firebase SDK (Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    /* Live Players Section */
-    .players-card {
-      background: #111827;
-      border-radius: 10px;
-      padding: 10px;
-      margin-top: 10px;
-      max-height: 150px;
-      overflow-y: auto;
-      text-align: left;
-      font-size: 12px;
-    }
-    .player-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid #1f2937;
-    }
-    .status-out { color: #22c55e; font-weight: bold; }
-    .status-in { color: #38bdf8; }
+    <!-- Adsgram SDK (Telegram Native Ads) -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 
-    /* Modal Popup Styles */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-    .modal-content {
-      background: #1a2634;
-      padding: 20px;
-      border-radius: 12px;
-      width: 85%;
-      max-width: 320px;
-      text-align: center;
-    }
-    .ref-link-box {
-      background: #0f1721;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      color: #38bdf8;
-      word-break: break-all;
-      margin: 8px 0;
-    }
+    <!-- MONETAG SDK SCRIPT (Aapka Exact Script & Zone ID Setup) -->
+    <script src='//libtl.com/sdk.js' data-zone='11447350' data-sdk='show_11447350'></script>
 
-    .qr-img {
-      width: 180px;
-      height: 180px;
-      margin: 10px 0;
-      border-radius: 8px;
-      background: white;
-      padding: 5px;
-    }
-    .welcome-banner {
-      background: #2563eb;
-      color: white;
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-  </style>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .wallet-card {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .balance {
+            font-size: 24px;
+            color: #22c55e;
+            font-weight: bold;
+        }
+        .ad-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 300px;
+            margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        .ad-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Top Bar with Profile Button -->
-  <div class="top-bar">
-    <div class="profile-btn" onclick="openProfile()">
-      👤 <span id="top-username">Profile</span>
-    </div>
-    <div>
-      <span style="font-size:12px; color:#aaa;">Balance:</span>
-      <span class="balance-box">₹<span id="user-balance">0.00</span></span>
-    </div>
-  </div>
+    <h2>✈️ Aviator Crash Game</h2>
 
-  <div id="welcome-msg" class="welcome-banner" style="display:none;">🎉 Welcome! ₹10 Bonus Added to your Wallet!</div>
-
-  <!-- Deposit / Withdraw Buttons -->
-  <div class="card">
-    <div class="btn-group">
-      <button class="btn-deposit" onclick="showTab('deposit-tab')">➕ Deposit</button>
-      <button class="btn-withdraw" onclick="showTab('withdraw-tab')">➖ Withdraw</button>
-    </div>
-  </div>
-
-  <!-- Game Section -->
-  <div id="game-tab" class="tab-content active card">
-    <div class="game-container" id="gameBox">
-      <canvas id="aviatorCanvas"></canvas>
-      <div class="mult-overlay" id="multiplier">1.00x</div>
+    <!-- User Wallet Section -->
+    <div class="wallet-card">
+        <div>Aapka Coin Balance:</div>
+        <div id="coinBalance" class="balance">0 Coins</div>
+        <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">(100 Coins = ₹0.10)</div>
     </div>
 
-    <input type="number" id="bet-amount" value="5" placeholder="Bet Amount (₹)">
-    <button class="btn-action" id="game-btn" onclick="toggleGame()">BET (START)</button>
-    
-    <!-- Live Players Section -->
-    <div class="players-card">
-      <div style="font-weight:bold; margin-bottom:5px; color:#aaa;">🔴 Live Bets (<span id="player-count">100</span> Active)</div>
-      <div id="players-list"></div>
-    </div>
+    <!-- Manual Watch Ad Button -->
+    <button class="ad-btn" onclick="triggerAdFromGame()">
+        🎥 Watch Ad (+100 Coins)
+    </button>
 
-    <button class="btn-admin" onclick="showTab('admin-tab')">⚙️ Admin Control Panel</button>
-  </div>
-
-  <!-- Deposit Section -->
-  <div id="deposit-tab" class="tab-content card">
-    <h3>Add Funds (UPI QR)</h3>
-    <p style="font-size: 13px; color: #94a3b8;">Scan & Pay via Google Pay, PhonePe, Paytm</p>
-    
-    <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ypuneet440@okaxis%26pn=Puneet%20Yadav" alt="UPI QR">
-    
-    <p>UPI ID: <b>ypuneet440@okaxis</b></p>
-    <input type="number" id="dep-amount" placeholder="Enter Paid Amount (₹)">
-    <input type="text" id="dep-utr" placeholder="Enter 12-Digit UTR/Ref No.">
-    <button class="btn-deposit" onclick="submitDeposit()">Submit Payment Proof</button>
-    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
-  </div>
-
-  <!-- Withdraw Section -->
-  <div id="withdraw-tab" class="tab-content card">
-    <h3>Withdraw Funds</h3>
-    <input type="number" id="wd-amount" placeholder="Enter Amount (Min ₹50)">
-    <input type="text" id="wd-upi" placeholder="Enter Your UPI ID">
-    <button class="btn-withdraw" onclick="submitWithdraw()">Submit Withdrawal Request</button>
-    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
-  </div>
-
-  <!-- Admin Control Panel -->
-  <div id="admin-tab" class="tab-content card">
-    <h3>⚙️ Admin Owner Panel</h3>
-    <p style="font-size: 12px; color: #94a3b8;">Enter Target User ID to change balance & multipliers:</p>
-    <input type="text" id="admin-target-uid" placeholder="User Telegram ID">
-    
-    <label style="font-size:12px; color:#aaa;">Set Wallet Balance (₹):</label>
-    <input type="number" id="admin-set-bal">
-    <button class="btn-deposit" style="margin-bottom: 12px;" onclick="updateBalance()">Update Balance</button>
-    
-    <label style="font-size:12px; color:#aaa;">User Win Probability (0.1 = 10%, 0.8 = 80%):</label>
-    <input type="number" step="0.1" id="admin-win-rate" value="0.3">
-
-    <label style="font-size:12px; color:#aaa;">Target Max Win Cap (1x to 15x):</label>
-    <input type="number" step="0.5" min="1" max="15" id="admin-max-cap" value="5.0">
-    
-    <button class="btn-withdraw" onclick="saveAdminSettings()">Save Target User Settings</button>
-    <button style="background:#64748b; color:white; margin-top:8px;" onclick="showTab('game-tab')">Back to Game</button>
-  </div>
-
-  <!-- Profile Modal -->
-  <div class="modal" id="profileModal">
-    <div class="modal-content">
-      <h3>👤 Account Details</h3>
-      <p style="margin:5px 0;"><b>Name:</b> <span id="prof-name">...</span></p>
-      <p style="margin:5px 0;"><b>User ID:</b> <span id="prof-id">...</span></p>
-      <hr style="border:0.5px solid #334155; margin:15px 0;">
-      <h4>🎁 Refer & Earn (₹100)</h4>
-      <p style="font-size:12px; color:#aaa;">Per Refer Bonus: ₹100</p>
-      <div class="ref-link-box" id="ref-link">https://t.me/puneetrashibot?start=...</div>
-      <button class="btn-deposit" style="width:100%;" onclick="copyRef()">Copy Link</button>
-      <button style="background:#ef4444; color:white; width:100%; margin-top:8px;" onclick="closeProfile()">Close</button>
-    </div>
-  </div>
-
-  <script>
-    // Firebase Config Integrated
-    const firebaseConfig = {
-      apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAlsszD6FCMic",
-      authDomain: "aviator-3b6b1.firebaseapp.com",
-      projectId: "aviator-3b6b1",
-      storageBucket: "aviator-3b6b1.firebasestorage.app",
-      messagingSenderId: "963462673561",
-      appId: "1:963462673561:web:7c9cdc9a68d38c5ce53408",
-      databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc";
-    const ADMIN_CHAT_ID = "6247495377"; 
-
-    let tg = window.Telegram.WebApp;
-    if(tg) tg.expand();
-
-    // User Details
-    let tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
-    let userName = tgUser ? (tgUser.first_name + " " + (tgUser.last_name || "")) : "Guest User";
-    let userId = tgUser ? tgUser.id.toString() : "guest_12345";
-    let userHandle = tgUser && tgUser.username ? ("@" + tgUser.username) : "No Username";
-
-    document.getElementById('top-username').innerText = userName.split(' ')[0];
-    document.getElementById('admin-target-uid').value = userId;
-
-    let balance = 0.00;
-    let winProbability = 0.3;
-    let maxCapLimit = 5.0;
-    let isPlaying = false;
-    let timer = null;
-    let currentMultiplier = 1.00;
-
-    // Profile Setup
-    document.getElementById('prof-name').innerText = userName;
-    document.getElementById('prof-id').innerText = userId;
-    const referUrl = `https://t.me/puneetrashibot?start=${userId}`;
-    document.getElementById('ref-link').innerText = referUrl;
-
-    function openProfile() { document.getElementById('profileModal').style.display = 'flex'; }
-    function closeProfile() { document.getElementById('profileModal').style.display = 'none'; }
-    function copyRef() {
-      navigator.clipboard.writeText(referUrl);
-      alert("Referral Link Copied!");
-    }
-
-    // Canvas Setup
-    const cvs = document.getElementById('aviatorCanvas');
-    const ctx = cvs.getContext('2d');
-    cvs.width = cvs.offsetWidth;
-    cvs.height = cvs.offsetHeight;
-    let points = [];
-
-    function drawFlight() {
-      ctx.clearRect(0, 0, cvs.width, cvs.height);
-      if (points.length < 2) return;
-
-      // Curve Flight Line
-      ctx.beginPath();
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 3;
-      ctx.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-      }
-      ctx.stroke();
-
-      // Yellow Plane Dot Head
-      const last = points[points.length - 1];
-      ctx.fillStyle = '#facc15';
-      ctx.beginPath();
-      ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Trigger Coins Animation
-    function triggerCoins() {
-      const box = document.getElementById('gameBox');
-      for (let i = 0; i < 6; i++) {
-        let coin = document.createElement('div');
-        coin.className = 'coin';
-        coin.innerText = '🪙';
-        coin.style.left = (30 + Math.random() * 40) + '%';
-        coin.style.top = (40 + Math.random() * 20) + '%';
-        box.appendChild(coin);
-        setTimeout(() => coin.remove(), 1000);
-      }
-    }
-
-    // Fake Players Generator
-    let fakePlayers = [];
-    const sampleNames = ["Rahul_P", "Amit_X", "Vikash_99", "Aman_K", "Suresh_8", "Priya_M", "Karan_7", "Rohan_07", "Deepak_3", "Pooja_88"];
-    
-    function initFakePlayers() {
-      fakePlayers = [];
-      for (let i = 0; i < 20; i++) {
-        let name = sampleNames[Math.floor(Math.random() * sampleNames.length)] + Math.floor(Math.random() * 90 + 10);
-        let bet = [10, 20, 50, 100, 200, 500][Math.floor(Math.random() * 6)];
-        fakePlayers.push({ name, bet, out: false, mult: 0 });
-      }
-      renderPlayers();
-    }
-
-    function renderPlayers() {
-      const list = document.getElementById('players-list');
-      list.innerHTML = '';
-      fakePlayers.forEach(p => {
-        let html = `<div class="player-row">
-          <span>${p.name} (₹${p.bet})</span>
-          <span class="${p.out ? 'status-out' : 'status-in'}">${p.out ? 'Cashed @ ' + p.mult + 'x' : 'Betting...'}</span>
-        </div>`;
-        list.innerHTML += html;
-      });
-    }
-
-    function updateFakePlayers() {
-      fakePlayers.forEach(p => {
-        if (!p.out && Math.random() < 0.15 && currentMultiplier > 1.2) {
-          p.out = true;
-          p.mult = currentMultiplier.toFixed(2);
-          triggerCoins(); // Coins fly when fake player cashes out
-        }
-      });
-      renderPlayers();
-    }
-
-    initFakePlayers();
-
-    // Firebase Realtime Listener
-    const userRef = db.ref('users/' + userId);
-    userRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        balance = parseFloat(data.balance) || 0.00;
-        winProbability = parseFloat(data.winRate) || 0.3;
-        maxCapLimit = parseFloat(data.maxCap) || 5.0;
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
-        document.getElementById('admin-set-bal').value = balance;
-        document.getElementById('admin-win-rate').value = winProbability;
-        document.getElementById('admin-max-cap').value = maxCapLimit;
-      } else {
-        balance = 10.00;
-        userRef.set({
-          name: userName,
-          username: userHandle,
-          balance: balance,
-          winRate: 0.3,
-          maxCap: 5.0
-        });
-        document.getElementById('welcome-msg').style.display = 'block';
-        document.getElementById('user-balance').innerText = balance.toFixed(2);
+    <script>
+        // FIREBASE CONFIGURATION (Yahan apni firebase details daalein)
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
         
-        sendTelegramNotification(`🎉 NEW USER JOINED\n\nName: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nBonus Given: ₹10`);
-      }
-    });
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
 
-    function sendTelegramNotification(textMessage) {
-      let encodedMsg = encodeURIComponent(textMessage);
-      let url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_CHAT_ID}&text=${encodedMsg}`;
-      let img = new Image();
-      img.src = url;
-    }
+        // Telegram User Identification
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const userId = tg.initDataUnsafe?.user?.id || "test_user_123";
 
-    function saveBalanceToDB(newBal) {
-      balance = newBal;
-      userRef.update({ balance: balance });
-    }
+        const ADSGRAM_BLOCK_ID = "YOUR_ADSGRAM_BLOCK_ID"; 
+        let adRotatorIndex = 0;
 
-    function showTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-    }
+        // Sync Balance
+        db.ref('users/' + userId + '/coins').on('value', (snapshot) => {
+            const coins = snapshot.val() || 0;
+            document.getElementById('coinBalance').innerText = `${coins.toFixed(1)} Coins`;
+        });
 
-    function toggleGame() {
-      let btn = document.getElementById('game-btn');
-      let multText = document.getElementById('multiplier');
-      let bet = parseFloat(document.getElementById('bet-amount').value);
-
-      if (!isPlaying) {
-        if (bet > balance || isNaN(bet) || bet <= 0) {
-          alert("Insufficient or Invalid Balance!");
-          return;
+        // AD TRIGGER SYSTEM
+        function triggerAdFromGame() {
+            if (adRotatorIndex === 0) {
+                showMonetagAd();
+                adRotatorIndex = 1;
+            } else {
+                showAdsgramAd();
+                adRotatorIndex = 0;
+            }
         }
 
-        saveBalanceToDB(balance - bet);
+        // Monetag Exact Ad Show Function
+        function showMonetagAd() {
+            if (typeof show_11447350 === 'function') {
+                show_11447350().then(() => {
+                    creditCoins(userId);
+                }).catch(() => {
+                    alert("Ad poora nahi dekha gaya!");
+                });
+            } else {
+                showAdsgramAd();
+            }
+        }
 
-        isPlaying = true;
-        btn.innerText = "CASH OUT";
-        btn.style.background = "#22c55e";
+        // Adsgram Ad Show
+        function showAdsgramAd() {
+            if (window.Adsgram) {
+                const AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+                AdController.show().then(() => {
+                    creditCoins(userId);
+                }).catch(() => {
+                    console.log("Adsgram Ad closed or failed");
+                });
+            } else {
+                creditCoins(userId);
+            }
+        }
 
-        currentMultiplier = 1.00;
-        points = [{ x: 5, y: cvs.height - 10 }];
-        initFakePlayers();
+        // COIN CREDIT & REFERRAL LOGIC
+        function creditCoins(uId) {
+            const REWARD_COINS = 100;
+            const userRef = db.ref('users/' + uId);
 
-        let isWinRound = Math.random() < winProbability;
-        // Crash multiplier scale based on maxCapLimit (up to 15x)
-        let maxCap = Math.min(Math.max(maxCapLimit, 1.1), 15.0);
-        let crashPoint = isWinRound 
-          ? (Math.random() * (maxCap - 1.2) + 1.2).toFixed(2) 
-          : (Math.random() * 0.3 + 1.02).toFixed(2);
+            userRef.transaction((user) => {
+                if (!user) {
+                    user = { coins: 0, adViews: 0 };
+                }
+                user.coins = (user.coins || 0) + REWARD_COINS;
+                user.adViews = (user.adViews || 0) + 1;
 
-        timer = setInterval(() => {
-          currentMultiplier += 0.04;
-          multText.innerText = currentMultiplier.toFixed(2) + 'x';
-          multText.style.color = "#22c55e";
-
-          // Calculate Curve Line Coordinates
-          let last = points[points.length - 1];
-          let nextX = last.x + 3;
-          let nextY = cvs.height - 10 - Math.pow(nextX / 14, 1.5);
-          if (nextY < 15) nextY = 15;
-          points.push({ x: nextX, y: nextY });
-
-          drawFlight();
-          updateFakePlayers();
-
-          if (currentMultiplier >= crashPoint) {
-            clearInterval(timer);
-            multText.innerText = "CRASHED @ " + crashPoint + "x";
-            multText.style.color = "#ef4444";
-            btn.innerText = "BET (START)";
-            btn.style.background = "#ef4444";
-            isPlaying = false;
-            
-            ctx.clearRect(0, 0, cvs.width, cvs.height);
-          }
-        }, 80);
-
-      } else {
-        // User Cashed Out Successfully
-        clearInterval(timer);
-        let winAmt = bet * currentMultiplier;
-        saveBalanceToDB(balance + winAmt);
-        triggerCoins(); // Uchhalne wale coins effect
-
-        // High Flight Animation (Plane goes straight up into space)
-        let flightFly = setInterval(() => {
-          currentMultiplier += 0.15;
-          multText.innerText = currentMultiplier.toFixed(2) + 'x (FLEW AWAY🚀)';
-          let last = points[points.length - 1];
-          points.push({ x: last.x + 8, y: last.y - 8 });
-          drawFlight();
-
-          if (last.y < -20 || last.x > cvs.width + 20) {
-            clearInterval(flightFly);
-            ctx.clearRect(0, 0, cvs.width, cvs.height);
-          }
-        }, 40);
-
-        alert("Cashed Out! Won: ₹" + winAmt.toFixed(2));
-        btn.innerText = "BET (START)";
-        btn.style.background = "#ef4444";
-        isPlaying = false;
-      }
-    }
-
-    function submitDeposit() {
-      let amt = document.getElementById('dep-amount').value;
-      let utr = document.getElementById('dep-utr').value;
-      if (!amt || !utr) {
-        alert("Enter Amount and UTR Number!");
-        return;
-      }
-      
-      let msg = `📥 NEW DEPOSIT REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUTR/Ref: ${utr}\nCurrent Balance: ₹${balance}`;
-      
-      sendTelegramNotification(msg);
-      alert("Deposit Request Submitted!");
-      showTab('game-tab');
-    }
-
-    function submitWithdraw() {
-      let amt = parseFloat(document.getElementById('wd-amount').value);
-      let upi = document.getElementById('wd-upi').value;
-      if (amt > balance) {
-        alert("Insufficient Balance!");
-        return;
-      }
-      if (!amt || !upi) {
-        alert("Enter valid Amount & UPI ID!");
-        return;
-      }
-
-      saveBalanceToDB(balance - amt);
-
-      let msg = `📤 NEW WITHDRAWAL REQUEST\n\nUser: ${userName}\nID: ${userId}\nUsername: ${userHandle}\nAmount: ₹${amt}\nUPI ID: ${upi}\nRemaining Balance: ₹${balance}`;
-      
-      sendTelegramNotification(msg);
-      alert("Withdrawal Request Submitted!");
-      showTab('game-tab');
-    }
-
-    function updateBalance() {
-      let targetUid = document.getElementById('admin-target-uid').value.trim();
-      let newBal = parseFloat(document.getElementById('admin-set-bal').value);
-      if (targetUid && !isNaN(newBal)) {
-        db.ref('users/' + targetUid).update({ balance: newBal });
-        alert("Balance Updated for User ID: " + targetUid);
-      } else {
-        alert("Enter Valid User ID & Amount!");
-      }
-    }
-
-    function saveAdminSettings() {
-      let targetUid = document.getElementById('admin-target-uid').value.trim();
-      let rate = parseFloat(document.getElementById('admin-win-rate').value);
-      let cap = parseFloat(document.getElementById('admin-max-cap').value);
-
-      if (targetUid && !isNaN(rate) && !isNaN(cap)) {
-        db.ref('users/' + targetUid).update({ winRate: rate, maxCap: cap });
-        alert(`Settings Saved for ID: ${targetUid}\nWin Probability: ${rate}\nMax Cap: ${cap}x`);
-        showTab('game-tab');
-      } else {
-        alert("Enter Valid Details!");
-      }
-    }
-  </script>
+                if (user.referredBy) {
+                    const commission = REWARD_COINS * 0.005; 
+                    db.ref('users/' + user.referredBy + '/coins').transaction(c => (c || 0) + commission);
+                }
+                return user;
+            }).then(() => {
+                tg.showAlert("🎉 Sabhash! 100 Coins aapke wallet me add ho gaye hain.");
+            });
+        }
+    </script>
 </body>
 </html>
