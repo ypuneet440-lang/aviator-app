@@ -80,10 +80,10 @@
     <!-- PAGE 3: ADMIN PANEL -->
     <div id="adminPage" class="page">
         <div class="card">
-            <h3>Admin Game Control</h3>
-            <label style="font-size:12px;">Next Target Crash Multiplier:</label>
-            <input type="number" id="targetCrashInput" value="2.00" step="0.10">
-            <button class="btn btn-bet" onclick="setTargetCrash()">Set Target Multiplier</button>
+            <h3>Admin Control</h3>
+            <label style="font-size:12px;">Manual Target Crash (Optional):</label>
+            <input type="number" id="targetCrashInput" value="0" step="0.10" placeholder="0 for Automatic 30% Probability">
+            <button class="btn btn-bet" onclick="setTargetCrash()">Save Override Crash</button>
         </div>
     </div>
 
@@ -104,13 +104,13 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Telegram User Profile Data
+        // Telegram User Identification
         const user = tg.initDataUnsafe?.user || {};
         const userId = user.id ? user.id.toString() : "puneet_test_user";
-        const firstName = user.first_name || "New";
+        const firstName = user.first_name || "User";
         const username = user.username ? "@" + user.username : "No Username";
 
-        // TELEGRAM BOT NOTIFICATION CONFIG (Apna Bot Token aur Admin Chat ID yahan daalein)
+        // TELEGRAM BOT NOTIFICATION CONFIG
         const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"; 
         const ADMIN_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"; 
 
@@ -123,13 +123,25 @@
             }).catch(err => console.log(err));
         }
 
-        // Check New User Registration & Notify Admin
+        let userCoins = 0;
+        let isPlaying = false;
+        let isCashedOut = false;
+        let currentMultiplier = 1.00;
+        let targetCrash = 1.20;
+        let manualOverride = 0;
+        let gameInterval = null;
+        let currentBet = 0;
+
+        // User profile persistent load
         const userRef = db.ref('users/' + userId);
-        userRef.once('value').then((snapshot) => {
-            if (!snapshot.exists()) {
-                // First time join
+        userRef.on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                userCoins = data.coins || 0;
+                document.getElementById('coinBalance').innerText = `${userCoins.toFixed(1)} Coins`;
+            } else {
                 userRef.set({
-                    coins: 100, // Welcome bonus
+                    coins: 100,
                     name: firstName,
                     username: username,
                     joinedAt: new Date().toISOString()
@@ -138,21 +150,8 @@
             }
         });
 
-        let userCoins = 0;
-        let isPlaying = false;
-        let isCashedOut = false;
-        let currentMultiplier = 1.00;
-        let targetCrash = 2.00;
-        let gameInterval = null;
-        let currentBet = 0;
-
-        db.ref('users/' + userId + '/coins').on('value', (snap) => {
-            userCoins = snap.val() || 0;
-            document.getElementById('coinBalance').innerText = `${userCoins.toFixed(1)} Coins`;
-        });
-
         db.ref('gameSettings/targetCrash').on('value', (snap) => {
-            if (snap.val()) targetCrash = snap.val();
+            manualOverride = snap.val() || 0;
         });
 
         function switchTab(pageId, btn) {
@@ -174,28 +173,45 @@
             ctx.stroke();
         }
 
+        // 30% Winning probability algorithm
+        function calculateCrashPoint() {
+            if (manualOverride > 1.00) return manualOverride;
+            const rand = Math.random();
+            if (rand < 0.70) {
+                // 70% chance to crash early (Loss)
+                return parseFloat((1.01 + Math.random() * 0.45).toFixed(2));
+            } else {
+                // 30% chance to go higher (Win possibilities)
+                return parseFloat((1.50 + Math.random() * 3.50).toFixed(2));
+            }
+        }
+
         function handleGameAction() {
             const btn = document.getElementById('actionBtn');
             const betInput = parseInt(document.getElementById('betAmount').value);
 
             if (!isPlaying) {
-                if (betInput > userCoins) {
-                    tg.showAlert("Coins kam hain! Pehle Ad dekh kar coins earn karein.");
+                if (betInput > userCoins || betInput <= 0) {
+                    tg.showAlert("Aapke paas पर्याप्त Coins nahi hain! Watch Ad par click karke earn karein.");
                     return;
                 }
                 currentBet = betInput;
-                db.ref('users/' + userId + '/coins').set(userCoins - currentBet);
+                userCoins -= currentBet;
+                userRef.child('coins').set(userCoins);
 
                 isPlaying = true;
                 isCashedOut = false;
                 currentMultiplier = 1.00;
+                targetCrash = calculateCrashPoint();
+
                 btn.innerText = "CASHOUT";
                 btn.className = "btn btn-cashout";
                 startPlaneFlight();
             } else if (isPlaying && !isCashedOut) {
                 isCashedOut = true;
                 const winCoins = currentBet * currentMultiplier;
-                db.ref('users/' + userId + '/coins').set(userCoins + winCoins);
+                userCoins += winCoins;
+                userRef.child('coins').set(userCoins);
                 tg.showAlert(`🎉 Cashout Success! +${winCoins.toFixed(1)} Coins`);
                 btn.innerText = "CASHED OUT";
                 btn.style.opacity = "0.6";
@@ -222,20 +238,31 @@
                     btn.innerText = "BET";
                     btn.className = "btn btn-bet";
                     btn.style.opacity = "1";
+
+                    // Game Harne ke baad mandatory Ad show hoga
+                    if (!isCashedOut) {
+                        setTimeout(() => { triggerAdFromGame(false); }, 800);
+                    }
                 }
             }, 100);
         }
 
-        function triggerAdFromGame() {
+        function triggerAdFromGame(rewardCoins = true) {
             if (typeof show_11447350 === 'function') {
                 show_11447350().then(() => {
-                    db.ref('users/' + userId + '/coins').set(userCoins + 100);
-                    tg.showAlert("🎉 100 Coins added!");
+                    if (rewardCoins) {
+                        userCoins += 100;
+                        userRef.child('coins').set(userCoins);
+                        tg.showAlert("🎉 100 Coins added!");
+                    }
                 }).catch(() => {
-                    tg.showAlert("Ad not completed!");
+                    console.log("Ad closed or failed.");
                 });
             } else {
-                db.ref('users/' + userId + '/coins').set(userCoins + 100);
+                if (rewardCoins) {
+                    userCoins += 100;
+                    userRef.child('coins').set(userCoins);
+                }
             }
         }
 
@@ -244,22 +271,25 @@
             const coins = parseInt(document.getElementById('withdrawCoins').value);
 
             if (!upi || coins < 1000 || coins > userCoins) {
-                tg.showAlert("Invalid UPI ID or insufficient balance (Min 1,000 Coins).");
+                tg.showAlert("Invalid UPI ID ya kam balance (Min 1,000 Coins).");
                 return;
             }
 
-            db.ref('users/' + userId + '/coins').set(userCoins - coins);
-            
-            // Send Withdrawal Alert to Admin Telegram
-            sendTelegramAlert(`💸 *New Withdrawal Request!*\n👤 User: ${firstName} (${username})\n💳 UPI: \`${upi}\`\n🪙 Coins: ${coins} (₹${(coins/10000).toFixed(2)})`);
+            // Withdrawal karte time Ad trigger hoga
+            triggerAdFromGame(false);
 
-            tg.showAlert("Withdrawal request submitted successfully!");
+            userCoins -= coins;
+            userRef.child('coins').set(userCoins);
+            
+            sendTelegramAlert(`💸 *New Withdrawal Request!*\n👤 User: ${firstName} (${username})\n💳 UPI: \`${upi}\`\n🪙 Coins: ${coins} (₹${(coins/1000).toFixed(2)})`);
+
+            tg.showAlert("Withdrawal request submit ho gayi hai!");
         }
 
         function setTargetCrash() {
             const target = parseFloat(document.getElementById('targetCrashInput').value);
             db.ref('gameSettings/targetCrash').set(target);
-            tg.showAlert(`Next crash multiplier set to ${target}x`);
+            tg.showAlert(`Manual override multiplier set to ${target}x`);
         }
     </script>
 </body>
