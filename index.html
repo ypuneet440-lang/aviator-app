@@ -8,7 +8,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     
     <!-- MONETAG SDK -->
     <script src='//libtl.com/sdk.js' data-zone='11447350' data-sdk='show_11447350'></script>
@@ -18,25 +17,33 @@
         body { background: #0f172a; color: white; margin: 0; padding: 15px; text-align: center; }
         
         .nav-tabs { display: flex; justify-content: space-around; background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-        .tab-btn { background: none; border: none; color: #94a3b8; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .tab-btn { background: none; border: none; color: #94a3b8; font-size: 13px; font-weight: bold; cursor: pointer; }
         .tab-btn.active { color: #38bdf8; border-bottom: 2px solid #38bdf8; }
 
-        .card { background: #1e293b; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card { background: #1e293b; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left; }
+        .card-center { text-align: center; }
         .balance-text { font-size: 22px; color: #22c55e; font-weight: bold; }
 
         #gameCanvas { background: #020617; border-radius: 10px; width: 100%; height: 200px; border: 1px solid #334155; }
-        .multiplier { font-size: 32px; font-weight: bold; margin: 10px 0; color: #38bdf8; }
+        .multiplier { font-size: 32px; font-weight: bold; margin: 10px 0; color: #38bdf8; text-align: center; }
         .crashed { color: #ef4444; }
 
-        .btn { border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn { border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
         .btn-bet { background: #22c55e; color: white; }
         .btn-cashout { background: #eab308; color: black; }
         .btn-ad { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
         .btn-withdraw { background: #3b82f6; color: white; }
+        .btn-refer { background: #8b5cf6; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin-top: 5px; }
 
         input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; margin-top: 8px; }
         .page { display: none; }
         .page.active { display: block; }
+        .ref-box { background: #0f172a; padding: 10px; border-radius: 6px; word-break: break-all; font-size: 12px; border: 1px dashed #38bdf8; margin-top: 10px; }
+        
+        .user-item { background: #0f172a; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #334155; font-size: 13px; }
+        .user-edit-row { display: flex; gap: 8px; margin-top: 8px; }
+        .user-edit-row input { margin-top: 0; }
     </style>
 </head>
 <body>
@@ -44,20 +51,21 @@
     <!-- Tab Navigation -->
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('gamePage', this)">✈️ Game</button>
+        <button class="tab-btn" onclick="switchTab('referPage', this)">🤝 Refer</button>
         <button class="tab-btn" onclick="switchTab('withdrawPage', this)">💳 Withdraw</button>
         <button class="tab-btn" onclick="switchTab('adminPage', this)">⚙️ Admin</button>
     </div>
 
     <!-- User Balance Info -->
-    <div class="card">
+    <div class="card card-center">
         <div>Total Balance:</div>
         <div id="coinBalance" class="balance-text">0.0 Coins</div>
-        <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">(100 Coins = ₹0.10)</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 3px;">(10,000 Coins = ₹10.00)</div>
     </div>
 
     <!-- PAGE 1: AVIATOR GAME -->
     <div id="gamePage" class="page active">
-        <div class="card">
+        <div class="card card-center">
             <canvas id="gameCanvas"></canvas>
             <div id="multiDisplay" class="multiplier">1.00x</div>
             <input type="number" id="betAmount" value="50" placeholder="Bet Amount (Coins)">
@@ -66,31 +74,51 @@
         <button class="btn btn-ad" onclick="triggerAdFromGame()">🎥 Watch Ad (+100 Coins)</button>
     </div>
 
-    <!-- PAGE 2: WITHDRAWAL -->
+    <!-- PAGE 2: REFER & EARN -->
+    <div id="referPage" class="page">
+        <div class="card card-center">
+            <h3>🎁 Refer & Earn</h3>
+            <p style="font-size: 13px; color: #94a3b8;">Har friend ko invite karne par payein <b>10,000 Coins (₹10)</b>!</p>
+            <div class="ref-box" id="refLinkText">Loading link...</div>
+            <button class="btn btn-refer" onclick="copyReferLink()">📋 Copy Refer Link</button>
+        </div>
+    </div>
+
+    <!-- PAGE 3: WITHDRAWAL -->
     <div id="withdrawPage" class="page">
         <div class="card">
-            <h3>Withdraw Earnings</h3>
-            <p style="font-size: 12px; color: #94a3b8;">Minimum Withdrawal: 1,000 Coins (₹1.00)</p>
+            <h3 style="text-align: center;">Withdraw Earnings</h3>
+            <p style="font-size: 12px; color: #94a3b8; text-align: center;">Minimum Withdrawal: 1,000 Coins (₹1.00)</p>
             <input type="text" id="upiId" placeholder="Enter UPI ID (e.g. 9876543210@paytm)">
             <input type="number" id="withdrawCoins" placeholder="Coins to withdraw">
             <button class="btn btn-withdraw" onclick="submitWithdrawal()">Request Withdrawal</button>
         </div>
     </div>
 
-    <!-- PAGE 3: ADMIN PANEL -->
+    <!-- PAGE 4: ADMIN PANEL -->
     <div id="adminPage" class="page">
         <div class="card">
-            <h3>Admin Control</h3>
+            <h3>⚙️ Admin Control</h3>
             <label style="font-size:12px;">Manual Target Crash (Optional):</label>
             <input type="number" id="targetCrashInput" value="0" step="0.10" placeholder="0 for Automatic 30% Probability">
             <button class="btn btn-bet" onclick="setTargetCrash()">Save Override Crash</button>
         </div>
+
+        <div class="card">
+            <h3>👥 All Users Data</h3>
+            <div id="adminUsersList">Loading users...</div>
+        </div>
     </div>
 
     <script>
+        // CONFIGURATION
+        const BOT_USERNAME = "uneetrashibot"; 
+        const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc"; 
+        const ADMIN_CHAT_ID = "6247495377"; 
+
         // FIREBASE CONFIGURATION
         const firebaseConfig = {
-            apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAL0mJq-69T58", // Auto-loaded from project
+            apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAL0mJq-69T58",
             authDomain: "aviator-3b6b1.firebaseapp.com",
             databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com",
             projectId: "aviator-3b6b1",
@@ -110,23 +138,21 @@
         const firstName = user.first_name || "User";
         const username = user.username ? "@" + user.username : "No Username";
 
-        const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc"; 
-        const ADMIN_CHAT_ID = "6247495377"; 
+        const startParam = tg.initDataUnsafe?.start_param || "";
 
-        // MONETAG IN-APP INTERSTITIAL AUTOMATIC TRIGGER SETUP
+        // MONETAG ADS INITIALIZATION
         window.addEventListener('load', () => {
             if (typeof show_11447350 === 'function') {
                 show_11447350({ 
                     type: 'inApp', 
-                    inAppSettings: { 
-                        frequency: 2, 
-                        capping: 0.1, 
-                        interval: 30, 
-                        timeout: 5, 
-                        everyPage: false 
-                    } 
+                    inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false } 
                 });
             }
+            const referUrl = `https://t.me/${BOT_USERNAME}?start=${userId}`;
+            document.getElementById('refLinkText').innerText = referUrl;
+            
+            // Load Admin Data
+            loadUsersForAdmin();
         });
 
         function sendTelegramAlert(message) {
@@ -146,6 +172,7 @@
         let gameInterval = null;
         let currentBet = 0;
 
+        // USER DATA & AUTOMATIC REFERRAL TRACKING
         const userRef = db.ref('users/' + userId);
         userRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -157,9 +184,22 @@
                     coins: 100,
                     name: firstName,
                     username: username,
+                    referredBy: startParam || "Direct",
                     joinedAt: new Date().toISOString()
                 });
-                sendTelegramAlert(`🚨 *New User Joined!* \n👤 Name: ${firstName} \n🔗 Username: ${username} \n🆔 ID: \`${userId}\``);
+
+                sendTelegramAlert(`🚨 *New User Joined!*\n👤 Name: ${firstName}\n🔗 Username: ${username}\n🆔 ID: \`${userId}\`\n🤝 Referred By: \`${startParam || "Direct"}\``);
+
+                if (startParam && startParam !== userId) {
+                    const referrerRef = db.ref('users/' + startParam);
+                    referrerRef.once('value', (refSnap) => {
+                        if (refSnap.exists()) {
+                            const currentRefCoins = refSnap.val().coins || 0;
+                            referrerRef.child('coins').set(currentRefCoins + 10000);
+                            sendTelegramAlert(`🎉 *Referral Reward Added!*\nReferrer ID \`${startParam}\` earned *10,000 Coins* for inviting ${firstName}!`);
+                        }
+                    });
+                }
             }
         });
 
@@ -174,6 +214,13 @@
             btn.classList.add('active');
         }
 
+        function copyReferLink() {
+            const link = document.getElementById('refLinkText').innerText;
+            navigator.clipboard.writeText(link);
+            tg.showAlert("Referral link copied!");
+        }
+
+        // AVIATOR GAME ENGINE
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         function drawCanvas(xRatio, yRatio, isCrash = false) {
@@ -202,7 +249,7 @@
 
             if (!isPlaying) {
                 if (betInput > userCoins || betInput <= 0) {
-                    tg.showAlert("Coins kam hain! Watch Ad par click karke earn karein.");
+                    tg.showAlert("Coins kam hain! Watch Ad ya Refer karke earn karein.");
                     return;
                 }
                 currentBet = betInput;
@@ -298,6 +345,48 @@
             const target = parseFloat(document.getElementById('targetCrashInput').value);
             db.ref('gameSettings/targetCrash').set(target);
             tg.showAlert(`Manual override multiplier set to ${target}x`);
+        }
+
+        // ADMIN REAL-TIME USER DATA & EDIT SYSTEM
+        function loadUsersForAdmin() {
+            db.ref('users').on('value', (snapshot) => {
+                const listDiv = document.getElementById('adminUsersList');
+                listDiv.innerHTML = "";
+
+                if (!snapshot.exists()) {
+                    listDiv.innerText = "No users found.";
+                    return;
+                }
+
+                snapshot.forEach((childSnap) => {
+                    const uId = childSnap.key;
+                    const uData = childSnap.val();
+
+                    const userBox = document.createElement('div');
+                    userBox.className = 'user-item';
+                    userBox.innerHTML = `
+                        <div><b>${uData.name || 'User'}</b> (${uData.username || 'No Username'})</div>
+                        <div style="font-size: 11px; color: #94a3b8;">ID: ${uId} | Referred By: ${uData.referredBy || 'Direct'}</div>
+                        <div style="color:#22c55e; font-weight:bold; margin-top:3px;">Coins: ${uData.coins || 0}</div>
+                        <div class="user-edit-row">
+                            <input type="number" id="input_${uId}" placeholder="New Coins" value="${uData.coins || 0}">
+                            <button class="btn btn-withdraw btn-sm" onclick="updateUserCoins('${uId}')">Update</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(userBox);
+                });
+            });
+        }
+
+        function updateUserCoins(targetUserId) {
+            const val = parseFloat(document.getElementById(`input_${targetUserId}`).value);
+            if (isNaN(val)) {
+                tg.showAlert("Valid number daalein!");
+                return;
+            }
+            db.ref('users/' + targetUserId + '/coins').set(val).then(() => {
+                tg.showAlert(`User ${targetUserId} ke coins update hokar ${val} ho gaye!`);
+            });
         }
     </script>
 </body>
