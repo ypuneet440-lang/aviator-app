@@ -17,7 +17,7 @@
         body { background: #0f172a; color: white; margin: 0; padding: 15px; text-align: center; }
         
         .nav-tabs { display: flex; justify-content: space-around; background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-        .tab-btn { background: none; border: none; color: #94a3b8; font-size: 13px; font-weight: bold; cursor: pointer; }
+        .tab-btn { background: none; border: none; color: #94a3b8; font-size: 12px; font-weight: bold; cursor: pointer; }
         .tab-btn.active { color: #38bdf8; border-bottom: 2px solid #38bdf8; }
 
         .card { background: #1e293b; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left; }
@@ -28,12 +28,13 @@
         .multiplier { font-size: 32px; font-weight: bold; margin: 10px 0; color: #38bdf8; text-align: center; }
         .crashed { color: #ef4444; }
 
-        .btn { border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn { border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; display: inline-block; text-decoration: none; text-align: center; }
         .btn-bet { background: #22c55e; color: white; }
         .btn-cashout { background: #eab308; color: black; }
         .btn-ad { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
         .btn-withdraw { background: #3b82f6; color: white; }
         .btn-refer { background: #8b5cf6; color: white; }
+        .btn-support { background: #06b6d4; color: white; }
         .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin-top: 5px; }
 
         input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; margin-top: 8px; }
@@ -53,7 +54,9 @@
         <button class="tab-btn active" onclick="switchTab('gamePage', this)">✈️ Game</button>
         <button class="tab-btn" onclick="switchTab('referPage', this)">🤝 Refer</button>
         <button class="tab-btn" onclick="switchTab('withdrawPage', this)">💳 Withdraw</button>
-        <button class="tab-btn" onclick="switchTab('adminPage', this)">⚙️ Admin</button>
+        <button class="tab-btn" onclick="switchTab('supportPage', this)">💬 Support</button>
+        <!-- Admin Button (Hidden by default) -->
+        <button class="tab-btn" id="adminTabBtn" style="display:none;" onclick="switchTab('adminPage', this)">⚙️ Admin</button>
     </div>
 
     <!-- User Balance Info -->
@@ -95,7 +98,24 @@
         </div>
     </div>
 
-    <!-- PAGE 4: ADMIN PANEL -->
+    <!-- PAGE 4: SUPPORT / HELP -->
+    <div id="supportPage" class="page">
+        <div class="card card-center">
+            <h3>🎧 Customer Support</h3>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">
+                Kya aapko Withdrawal ya Game me koi dikkat aa rahi hai? Humse sidhe Telegram par baat karein!
+            </p>
+            <!-- AAPKA TELEGRAM SUPPORT LINK -->
+            <a href="https://t.me/uneetrashibot" target="_blank" class="btn btn-support">
+                💬 Contact Admin on Telegram
+            </a>
+            <div style="font-size: 11px; color: #64748b; margin-top: 15px;">
+                Support Hours: 24/7 Available
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 5: ADMIN PANEL -->
     <div id="adminPage" class="page">
         <div class="card">
             <h3>⚙️ Admin Control</h3>
@@ -140,7 +160,7 @@
 
         const startParam = tg.initDataUnsafe?.start_param || "";
 
-        // MONETAG ADS INITIALIZATION
+        // MONETAG ADS INITIALIZATION & ADMIN CHECK
         window.addEventListener('load', () => {
             if (typeof show_11447350 === 'function') {
                 show_11447350({ 
@@ -151,8 +171,11 @@
             const referUrl = `https://t.me/${BOT_USERNAME}?start=${userId}`;
             document.getElementById('refLinkText').innerText = referUrl;
             
-            // Load Admin Data
-            loadUsersForAdmin();
+            // SECURITY CHECK: SIRF AAPKI ID PAR HI ADMIN TAB DIKHEGA
+            if (userId === ADMIN_CHAT_ID || userId === "6247495377") {
+                document.getElementById('adminTabBtn').style.display = "inline-block";
+                loadUsersForAdmin();
+            }
         });
 
         function sendTelegramAlert(message) {
