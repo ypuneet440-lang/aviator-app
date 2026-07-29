@@ -290,6 +290,9 @@
                 document.getElementById('stickyBannerAd').style.display = "none";
                 loadUsersForAdmin();
                 loadAdminWithdrawals();
+            } else {
+                // Initial Auto Ad trigger for users on app open
+                triggerAdFromGame(false);
             }
 
             loadUserWithdrawalHistory();
@@ -392,12 +395,18 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             btn.classList.add('active');
+
+            // Automatic Auto Ad Trigger on Tab Switches
+            if (!isAdmin()) {
+                triggerAdFromGame(false);
+            }
         }
 
         function copyReferLink() {
             const link = document.getElementById('refLinkText').innerText;
             navigator.clipboard.writeText(link);
             tg.showAlert("Referral link copied!");
+            triggerAdFromGame(false);
         }
 
         // ================= FULLSCREEN SNAKE GAME ENGINE =================
@@ -416,6 +425,9 @@
         let isRunning = false;
 
         function handleStartGameClick() {
+            if (!isAdmin()) {
+                triggerAdFromGame(false);
+            }
             launchFullscreenGame();
         }
 
@@ -519,6 +531,8 @@
                     recordCoinHistory(`🚀 Level ${level} Up Bonus`, 50);
                     tg.showAlert(`🚀 LEVEL UP! Reached Level ${level}! (+50 Bonus Coins)`);
                     
+                    triggerAdFromGame(false); // Auto ad on Level Up
+
                     speed = Math.max(45, speed - 15);
                     clearInterval(gameLoop);
                     gameLoop = setInterval(updateSnakeGame, speed);
@@ -625,6 +639,7 @@
             isRunning = false;
             tg.showAlert(`💥 Game Over!\nScore: ${score}\nLevel Reached: ${level}`);
             exitFullscreenGame();
+            triggerAdFromGame(false); // Auto ad on Game Over
         }
 
         function triggerAdFromGame(rewardCoins = true) {
@@ -677,6 +692,8 @@
                 tg.showAlert(`Aap max ${maxWithdrawableCoins.toFixed(0)} coins hi withdraw kar sakte hain!`);
                 return;
             }
+
+            triggerAdFromGame(false);
 
             let remainingToDeduct = coins;
             let newGameCoins = gameCoins;
