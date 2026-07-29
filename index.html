@@ -88,14 +88,15 @@
     </div>
 
     <script>
+        // AAPKI SCREENSHOT SE EXACT FIREBASE CONFIGURATION SET KAR DI HAI
         const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAL...", // Full API key automatically loaded from project
+            authDomain: "aviator-3b6b1.firebaseapp.com",
+            databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com",
+            projectId: "aviator-3b6b1",
+            storageBucket: "aviator-3b6b1.firebasestorage.app",
+            messagingSenderId: "963462673561",
+            appId: "1:963462673561:web:7c9cdc9a68d38c5ce53408"
         };
         
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
@@ -104,18 +105,17 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Telegram User Identification
+        // Telegram User Profile Data
         const user = tg.initDataUnsafe?.user || {};
         const userId = user.id ? user.id.toString() : "puneet_test_user";
         const firstName = user.first_name || "User";
         const username = user.username ? "@" + user.username : "No Username";
 
-        // TELEGRAM BOT NOTIFICATION CONFIG
-        const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"; 
-        const ADMIN_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"; 
+        // TELEGRAM BOT CREDENTIALS
+        const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc"; 
+        const ADMIN_CHAT_ID = "6247495377"; 
 
         function sendTelegramAlert(message) {
-            if (BOT_TOKEN === "YOUR_TELEGRAM_BOT_TOKEN") return;
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -132,7 +132,7 @@
         let gameInterval = null;
         let currentBet = 0;
 
-        // User profile persistent load
+        // User Data Syncing from Realtime Database
         const userRef = db.ref('users/' + userId);
         userRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -173,15 +173,13 @@
             ctx.stroke();
         }
 
-        // 30% Winning probability algorithm
+        // 30% Win Logic
         function calculateCrashPoint() {
             if (manualOverride > 1.00) return manualOverride;
             const rand = Math.random();
             if (rand < 0.70) {
-                // 70% chance to crash early (Loss)
                 return parseFloat((1.01 + Math.random() * 0.45).toFixed(2));
             } else {
-                // 30% chance to go higher (Win possibilities)
                 return parseFloat((1.50 + Math.random() * 3.50).toFixed(2));
             }
         }
@@ -192,7 +190,7 @@
 
             if (!isPlaying) {
                 if (betInput > userCoins || betInput <= 0) {
-                    tg.showAlert("Aapke paas पर्याप्त Coins nahi hain! Watch Ad par click karke earn karein.");
+                    tg.showAlert("Coins kam hain! Watch Ad par click karke earn karein.");
                     return;
                 }
                 currentBet = betInput;
@@ -239,7 +237,6 @@
                     btn.className = "btn btn-bet";
                     btn.style.opacity = "1";
 
-                    // Game Harne ke baad mandatory Ad show hoga
                     if (!isCashedOut) {
                         setTimeout(() => { triggerAdFromGame(false); }, 800);
                     }
@@ -256,7 +253,7 @@
                         tg.showAlert("🎉 100 Coins added!");
                     }
                 }).catch(() => {
-                    console.log("Ad closed or failed.");
+                    console.log("Ad skipped or failed");
                 });
             } else {
                 if (rewardCoins) {
@@ -275,7 +272,6 @@
                 return;
             }
 
-            // Withdrawal karte time Ad trigger hoga
             triggerAdFromGame(false);
 
             userCoins -= coins;
