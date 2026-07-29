@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@
 
     <style>
         * { box-sizing: border-box; font-family: Arial, sans-serif; touch-action: manipulation; }
-        body { background: #0f172a; color: white; margin: 0; padding: 12px; text-align: center; }
+        body { background: #0f172a; color: white; margin: 0; padding: 12px; padding-bottom: 70px; text-align: center; }
         
         .nav-tabs { display: flex; justify-content: space-around; background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
         .tab-btn { background: none; border: none; color: #94a3b8; font-size: 12px; font-weight: bold; cursor: pointer; }
@@ -23,6 +23,21 @@
         .card { background: #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: left; }
         .card-center { text-align: center; }
         .balance-text { font-size: 20px; color: #22c55e; font-weight: bold; }
+
+        /* FIXED BOTTOM SMALL AD BANNER */
+        .bottom-sticky-ad {
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 100%; height: 60px;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: #94a3b8;
+            font-size: 11px;
+        }
 
         /* FULLSCREEN OVERLAY CSS */
         #fullscreenGameOverlay {
@@ -36,6 +51,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px;
+            padding-bottom: 70px;
         }
         #fullscreenGameOverlay.active { display: flex; }
 
@@ -99,6 +115,10 @@
         .user-item { background: #0f172a; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #334155; font-size: 13px; }
         .user-edit-row { display: flex; gap: 8px; margin-top: 8px; }
         .user-edit-row input { margin-top: 0; }
+        .breakdown-box { font-size: 11px; color: #94a3b8; margin-top: 6px; background: #0f172a; padding: 8px; border-radius: 6px; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; }
+        .status-pending { background: #eab308; color: #000; }
+        .status-done { background: #22c55e; color: #fff; }
     </style>
 </head>
 <body>
@@ -118,8 +138,14 @@
     <!-- User Balance Info -->
     <div class="card card-center">
         <div>Total Balance:</div>
-        <div id="coinBalance" class="balance-text">0.0 Coins</div>
-        <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">(10,000 Coins = ₹10.00)</div>
+        <div id="coinBalance" class="balance-text">0.0 Coins (₹0.00)</div>
+        <div class="breakdown-box">
+            <div>🎮 Game/Ad Coins: <b id="gameCoinsText" style="color:#38bdf8;">0</b> (100% Withdrawable)</div>
+            <div>👥 Refer Coins: <b id="referCoinsText" style="color:#a855f7;">0</b> (40% Withdrawable = <span id="withdrawableRefCoins">0</span>)</div>
+            <div style="margin-top: 4px; color: #22c55e; font-weight: bold;">
+                💰 Max Withdrawable: <span id="maxWithdrawableText">0 Coins (₹0.00)</span>
+            </div>
+        </div>
     </div>
 
     <!-- PAGE 1: NORMAL LOBBY -->
@@ -153,6 +179,7 @@
         <div class="card card-center">
             <h3>🎁 Refer & Earn</h3>
             <p style="font-size: 13px; color: #94a3b8;">Har friend ko invite karne par payein <b>10,000 Coins (₹10)</b>!</p>
+            <p style="font-size: 11px; color: #eab308;">*Referral earning ka 40% withdrawable rahega.</p>
             <div class="ref-box" id="refLinkText">Loading link...</div>
             <button class="btn btn-refer" onclick="copyReferLink()">📋 Copy Refer Link</button>
         </div>
@@ -162,10 +189,15 @@
     <div id="withdrawPage" class="page">
         <div class="card">
             <h3 style="text-align: center;">Withdraw Earnings</h3>
-            <p style="font-size: 12px; color: #94a3b8; text-align: center;">Minimum Withdrawal: 1,000 Coins (₹1.00)</p>
+            <p style="font-size: 12px; color: #22c55e; text-align: center; font-weight: bold;">
+                Minimum Withdrawal: 50,000 Coins (₹50.00)
+            </p>
             <input type="text" id="upiId" placeholder="Enter UPI ID (e.g. 9876543210@paytm)">
-            <input type="number" id="withdrawCoins" placeholder="Coins to withdraw">
+            <input type="number" id="withdrawCoins" placeholder="Coins to withdraw (Min 50,000)">
             <button class="btn btn-withdraw" onclick="submitWithdrawal()">Request Withdrawal</button>
+
+            <h4 style="margin-top: 20px; margin-bottom: 8px;">📜 Your Withdrawal Requests</h4>
+            <div id="userWithdrawalsList" style="font-size: 12px;">No requests yet.</div>
         </div>
     </div>
 
@@ -188,9 +220,18 @@
     <!-- PAGE 5: ADMIN PANEL -->
     <div id="adminPage" class="page">
         <div class="card">
+            <h3>💸 Pending Withdrawal Requests</h3>
+            <div id="adminWithdrawalsList">Loading requests...</div>
+        </div>
+        <div class="card">
             <h3>👥 All Users Data</h3>
             <div id="adminUsersList">Loading users...</div>
         </div>
+    </div>
+
+    <!-- BOTTOM SMALL BANNER CONTAINER -->
+    <div class="bottom-sticky-ad" id="stickyBannerAd">
+        📢 Continuous Ad Banner Space
     </div>
 
     <script>
@@ -198,6 +239,7 @@
         const BOT_USERNAME = "puneetrashibot"; 
         const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc"; 
         const ADMIN_CHAT_ID = "6247495377"; 
+        const SUPPORT_USERNAME = "puneetrashibot"; 
 
         // FIREBASE CONFIGURATION
         const firebaseConfig = {
@@ -233,38 +275,66 @@
             
             if (isAdmin()) {
                 document.getElementById('adminTabBtn').style.display = "inline-block";
+                document.getElementById('stickyBannerAd').style.display = "none";
                 loadUsersForAdmin();
+                loadAdminWithdrawals();
             }
+
+            loadUserWithdrawalHistory();
         });
 
         function openSupportChat() {
-            const supportUrl = `https://t.me/${BOT_USERNAME}`;
+            const supportUrl = `https://t.me/${SUPPORT_USERNAME}`;
             if (tg.openTelegramLink) {
                 tg.openTelegramLink(supportUrl);
             } else {
-                window.open(supportUrl, '_blank');
+                window.location.href = supportUrl;
             }
         }
 
-        function sendTelegramAlert(message) {
+        function sendTelegramMessageToUser(targetChatId, messageText) {
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown' })
+                body: JSON.stringify({ chat_id: targetChatId, text: messageText, parse_mode: 'Markdown' })
             }).catch(err => console.log(err));
         }
 
-        let userCoins = 0;
+        function sendTelegramAlert(message) {
+            sendTelegramMessageToUser(ADMIN_CHAT_ID, message);
+        }
+
+        let gameCoins = 0;
+        let referCoins = 0;
+        let totalCoins = 0;
+        let maxWithdrawableCoins = 0;
 
         const userRef = db.ref('users/' + userId);
         userRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                userCoins = data.coins || 0;
-                document.getElementById('coinBalance').innerText = `${userCoins.toFixed(1)} Coins`;
+                gameCoins = data.gameCoins || 0;
+                referCoins = data.referCoins || 0;
+                
+                // Compatibility for old accounts
+                if (data.coins !== undefined && data.gameCoins === undefined) {
+                    gameCoins = data.coins;
+                    userRef.child('gameCoins').set(gameCoins);
+                }
+
+                totalCoins = gameCoins + referCoins;
+                const withdrawableRefCoins = referCoins * 0.40; // 40% cap
+                maxWithdrawableCoins = gameCoins + withdrawableRefCoins;
+
+                document.getElementById('coinBalance').innerText = `${totalCoins.toFixed(1)} Coins (₹${(totalCoins/1000).toFixed(2)})`;
+                document.getElementById('gameCoinsText').innerText = gameCoins.toFixed(1);
+                document.getElementById('referCoinsText').innerText = referCoins.toFixed(1);
+                document.getElementById('withdrawableRefCoins').innerText = withdrawableRefCoins.toFixed(1);
+                document.getElementById('maxWithdrawableText').innerText = `${maxWithdrawableCoins.toFixed(1)} Coins (₹${(maxWithdrawableCoins/1000).toFixed(2)})`;
             } else {
                 userRef.set({
-                    coins: 100,
+                    gameCoins: 100,
+                    referCoins: 0,
                     name: firstName,
                     username: username,
                     referredBy: startParam || "Direct",
@@ -277,9 +347,9 @@
                     const referrerRef = db.ref('users/' + startParam);
                     referrerRef.once('value', (refSnap) => {
                         if (refSnap.exists()) {
-                            const currentRefCoins = refSnap.val().coins || 0;
-                            referrerRef.child('coins').set(currentRefCoins + 10000);
-                            sendTelegramAlert(`🎉 *Referral Reward Added!*\nReferrer ID \`${startParam}\` earned *10,000 Coins* for inviting ${firstName}!`);
+                            const currentRefCoins = refSnap.val().referCoins || 0;
+                            referrerRef.child('referCoins').set(currentRefCoins + 10000);
+                            sendTelegramAlert(`🎉 *Referral Reward Added!*\nReferrer ID \`${startParam}\` earned *10,000 Refer Coins* for inviting ${firstName}!`);
                         }
                     });
                 }
@@ -291,26 +361,15 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             btn.classList.add('active');
-            
-            // ADMIN, SUPPORT, GAME, Ya Admin account ke liye koi ad trigger nahi hoga
-            if(isAdmin() || pageId === 'adminPage' || pageId === 'supportPage' || pageId === 'gamePage') {
-                return;
-            }
-
-            // Sirf Refer tab par general user jaye tab ad trigger hoga
-            if(pageId === 'referPage') {
-                triggerAdFromGame(false);
-            }
         }
 
         function copyReferLink() {
             const link = document.getElementById('refLinkText').innerText;
             navigator.clipboard.writeText(link);
             tg.showAlert("Referral link copied!");
-            triggerAdFromGame(false);
         }
 
-        // ================= FULLSCREEN REALISTIC SNAKE GAME ENGINE =================
+        // ================= FULLSCREEN SNAKE GAME ENGINE =================
         const canvas = document.getElementById('fsGameCanvas');
         const ctx = canvas.getContext('2d');
         const gridSize = 20; 
@@ -326,15 +385,7 @@
         let isRunning = false;
 
         function handleStartGameClick() {
-            if (!isAdmin() && typeof show_11447350 === 'function') {
-                show_11447350().then(() => {
-                    launchFullscreenGame();
-                }).catch(() => {
-                    launchFullscreenGame();
-                });
-            } else {
-                launchFullscreenGame();
-            }
+            launchFullscreenGame();
         }
 
         function launchFullscreenGame() {
@@ -426,13 +477,13 @@
 
             if (head.x === food.x && head.y === food.y) {
                 score += 10;
-                userCoins += 5; 
-                userRef.child('coins').set(userCoins);
+                gameCoins += 5; 
+                userRef.child('gameCoins').set(gameCoins);
 
                 if (score % 50 === 0) {
                     level += 1;
-                    userCoins += 50; 
-                    userRef.child('coins').set(userCoins);
+                    gameCoins += 50; 
+                    userRef.child('gameCoins').set(gameCoins);
                     tg.showAlert(`🚀 LEVEL UP! Reached Level ${level}! (+50 Bonus Coins)`);
                     
                     speed = Math.max(45, speed - 15);
@@ -544,11 +595,10 @@
         }
 
         function triggerAdFromGame(rewardCoins = true) {
-            // Admin ke liye koi ad show nahi hoga
             if (isAdmin()) {
                 if (rewardCoins) {
-                    userCoins += 100;
-                    userRef.child('coins').set(userCoins);
+                    gameCoins += 100;
+                    userRef.child('gameCoins').set(gameCoins);
                     tg.showAlert("🎉 100 Coins added!");
                 }
                 return;
@@ -557,8 +607,8 @@
             if (typeof show_11447350 === 'function') {
                 show_11447350().then(() => {
                     if (rewardCoins) {
-                        userCoins += 100;
-                        userRef.child('coins').set(userCoins);
+                        gameCoins += 100;
+                        userRef.child('gameCoins').set(gameCoins);
                         tg.showAlert("🎉 100 Coins added!");
                     }
                 }).catch(() => {
@@ -566,29 +616,151 @@
                 });
             } else {
                 if (rewardCoins) {
-                    userCoins += 100;
-                    userRef.child('coins').set(userCoins);
+                    gameCoins += 100;
+                    userRef.child('gameCoins').set(gameCoins);
                 }
             }
         }
 
+        // ================= WITHDRAWAL SYSTEM WITH MIN 50k & 40% REFERRAL RULE =================
         function submitWithdrawal() {
             const upi = document.getElementById('upiId').value;
             const coins = parseInt(document.getElementById('withdrawCoins').value);
 
-            if (!upi || coins < 1000 || coins > userCoins) {
-                tg.showAlert("Invalid UPI ID ya kam balance (Min 1,000 Coins).");
+            if (!upi) {
+                tg.showAlert("Kripya sahi UPI ID daalein!");
                 return;
             }
 
-            triggerAdFromGame(false);
+            if (isNaN(coins) || coins < 50000) {
+                tg.showAlert("Minimum Withdrawal limit 50,000 Coins (₹50.00) hai!");
+                return;
+            }
 
-            userCoins -= coins;
-            userRef.child('coins').set(userCoins);
-            
-            sendTelegramAlert(`💸 *New Withdrawal Request!*\n👤 User: ${firstName} (${username})\n💳 UPI: \`${upi}\`\n🪙 Coins: ${coins} (₹${(coins/1000).toFixed(2)})`);
+            if (coins > maxWithdrawableCoins) {
+                tg.showAlert(`Aap max ${maxWithdrawableCoins.toFixed(0)} coins hi withdraw kar sakte hain!\n(Referral earnings ka sirf 40% withdrawable hota hai)`);
+                return;
+            }
 
-            tg.showAlert("Withdrawal request submit ho gayi hai!");
+            // Deduct coins logically (First gameCoins then referCoins)
+            let remainingToDeduct = coins;
+            let newGameCoins = gameCoins;
+            let newReferCoins = referCoins;
+
+            if (newGameCoins >= remainingToDeduct) {
+                newGameCoins -= remainingToDeduct;
+            } else {
+                remainingToDeduct -= newGameCoins;
+                newGameCoins = 0;
+                // Since refer coins count at 40% efficiency for withdrawal limit, deduct equivalent refer balance
+                newReferCoins = Math.max(0, newReferCoins - (remainingToDeduct / 0.40));
+            }
+
+            userRef.child('gameCoins').set(newGameCoins);
+            userRef.child('referCoins').set(newReferCoins);
+
+            const reqRef = db.ref('withdrawals').push();
+            const reqData = {
+                id: reqRef.key,
+                userId: userId,
+                name: firstName,
+                username: username,
+                upi: upi,
+                coins: coins,
+                amountRupees: (coins / 1000).toFixed(2),
+                status: 'Processing',
+                timestamp: new Date().toISOString()
+            };
+
+            reqRef.set(reqData);
+
+            // Notify Admin
+            sendTelegramAlert(`💸 *New Withdrawal Request!*
+👤 User: ${firstName} (${username})
+🆔 ID: \`${userId}\`
+💳 UPI: \`${upi}\`
+🪙 Coins: ${coins} (₹${(coins/1000).toFixed(2)})
+⏳ Status: Processing`);
+
+            // Notify User on Telegram (Under Processing)
+            sendTelegramMessageToUser(userId, `⏳ *Withdrawal Request Under Processing!*
+
+Aapki ₹${(coins/1000).toFixed(2)} (${coins} Coins) ki withdrawal request receive ho gayi hai aur processing me hai. Admin jald hi aapke UPI ID (\`${upi}\`) par payment send kar dega.`);
+
+            tg.showAlert("Aapki withdrawal request submit ho gayi hai aur Processing me hai!");
+            document.getElementById('withdrawCoins').value = "";
+        }
+
+        function loadUserWithdrawalHistory() {
+            db.ref('withdrawals').orderByChild('userId').equalTo(userId).on('value', (snapshot) => {
+                const listDiv = document.getElementById('userWithdrawalsList');
+                listDiv.innerHTML = "";
+
+                if (!snapshot.exists()) {
+                    listDiv.innerText = "Abhi koi withdrawal request nahi hai.";
+                    return;
+                }
+
+                snapshot.forEach((childSnap) => {
+                    const item = childSnap.val();
+                    const statusClass = item.status === 'Done' ? 'status-done' : 'status-pending';
+                    
+                    const el = document.createElement('div');
+                    el.style.cssText = "background:#0f172a; padding:8px; border-radius:6px; margin-bottom:6px; text-align:left; border:1px solid #334155;";
+                    el.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <b>₹${item.amountRupees} (${item.coins} Coins)</b>
+                            <span class="status-badge ${statusClass}">${item.status}</span>
+                        </div>
+                        <div style="font-size:10px; color:#94a3b8; margin-top:2px;">UPI: ${item.upi} | ${new Date(item.timestamp).toLocaleDateString()}</div>
+                    `;
+                    listDiv.appendChild(el);
+                });
+            });
+        }
+
+        function loadAdminWithdrawals() {
+            db.ref('withdrawals').on('value', (snapshot) => {
+                const listDiv = document.getElementById('adminWithdrawalsList');
+                listDiv.innerHTML = "";
+
+                if (!snapshot.exists()) {
+                    listDiv.innerText = "No pending requests.";
+                    return;
+                }
+
+                snapshot.forEach((childSnap) => {
+                    const req = childSnap.val();
+                    if (req.status === 'Processing') {
+                        const el = document.createElement('div');
+                        el.className = 'user-item';
+                        el.innerHTML = `
+                            <div><b>${req.name}</b> (${req.username})</div>
+                            <div>UPI: <b style="color:#38bdf8;">${req.upi}</b></div>
+                            <div>Amount: <b style="color:#22c55e;">₹${req.amountRupees} (${req.coins} Coins)</b></div>
+                            <button class="btn btn-bet btn-sm" onclick="approveWithdrawal('${req.id}', '${req.userId}', '${req.amountRupees}', '${req.upi}')">✅ Mark Paid & Send Done Alert</button>
+                        `;
+                        listDiv.appendChild(el);
+                    }
+                });
+
+                if (listDiv.innerHTML === "") {
+                    listDiv.innerText = "Sabhi requests complete ho chuki hain!";
+                }
+            });
+        }
+
+        function approveWithdrawal(reqId, targetUserId, amount, upi) {
+            db.ref('withdrawals/' + reqId + '/status').set('Done').then(() => {
+                // Send Telegram Notification to User that Payment is Completed
+                sendTelegramMessageToUser(targetUserId, `🎉 *Withdrawal Completed / Successful!*
+
+Aapka ₹${amount} ka payment successfully aapke UPI ID (\`${upi}\`) par bhej diya gaya hai! Check kar lein.
+
+Game khelte rahein aur dosto ko refer karke kamate rahein! 🐍💰`);
+
+                tg.showAlert(`Payment status 'Done' mark ho gaya aur user ko message chala gaya!`);
+            });
         }
 
         function loadUsersForAdmin() {
@@ -604,15 +776,20 @@
                 snapshot.forEach((childSnap) => {
                     const uId = childSnap.key;
                     const uData = childSnap.val();
+                    const gCoins = uData.gameCoins || 0;
+                    const rCoins = uData.referCoins || 0;
 
                     const userBox = document.createElement('div');
                     userBox.className = 'user-item';
                     userBox.innerHTML = `
                         <div><b>${uData.name || 'User'}</b> (${uData.username || 'No Username'})</div>
                         <div style="font-size: 11px; color: #94a3b8;">ID: ${uId} | Referred By: ${uData.referredBy || 'Direct'}</div>
-                        <div style="color:#22c55e; font-weight:bold; margin-top:3px;">Coins: ${uData.coins || 0}</div>
+                        <div style="color:#22c55e; font-weight:bold; margin-top:3px;">
+                            Game Coins: ${gCoins} | Refer Coins: ${rCoins}
+                        </div>
                         <div class="user-edit-row">
-                            <input type="number" id="input_${uId}" placeholder="New Coins" value="${uData.coins || 0}">
+                            <input type="number" id="input_g_${uId}" placeholder="Game Coins" value="${gCoins}">
+                            <input type="number" id="input_r_${uId}" placeholder="Refer Coins" value="${rCoins}">
                             <button class="btn btn-withdraw btn-sm" onclick="updateUserCoins('${uId}')">Update</button>
                         </div>
                     `;
@@ -622,13 +799,15 @@
         }
 
         function updateUserCoins(targetUserId) {
-            const val = parseFloat(document.getElementById(`input_${targetUserId}`).value);
-            if (isNaN(val)) {
-                tg.showAlert("Valid number daalein!");
+            const gVal = parseFloat(document.getElementById(`input_g_${targetUserId}`).value);
+            const rVal = parseFloat(document.getElementById(`input_r_${targetUserId}`).value);
+            if (isNaN(gVal) || isNaN(rVal)) {
+                tg.showAlert("Valid numbers daalein!");
                 return;
             }
-            db.ref('users/' + targetUserId + '/coins').set(val).then(() => {
-                tg.showAlert(`User ${targetUserId} ke coins update hokar ${val} ho gaye!`);
+            db.ref('users/' + targetUserId + '/gameCoins').set(gVal);
+            db.ref('users/' + targetUserId + '/referCoins').set(rVal).then(() => {
+                tg.showAlert(`User ${targetUserId} ke coins update ho gaye!`);
             });
         }
     </script>
