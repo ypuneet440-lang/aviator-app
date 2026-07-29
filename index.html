@@ -291,7 +291,7 @@
                 loadUsersForAdmin();
                 loadAdminWithdrawals();
             } else {
-                // Initial Auto Ad trigger for users on app open
+                // Initial Ad on App Load
                 triggerAdFromGame(false);
             }
 
@@ -396,7 +396,7 @@
             document.getElementById(pageId).classList.add('active');
             btn.classList.add('active');
 
-            // Automatic Auto Ad Trigger on Tab Switches
+            // Auto Ad Trigger on Tab Switches (Game me nahi, baki tabs me)
             if (!isAdmin()) {
                 triggerAdFromGame(false);
             }
@@ -426,7 +426,7 @@
 
         function handleStartGameClick() {
             if (!isAdmin()) {
-                triggerAdFromGame(false);
+                triggerAdFromGame(false); // Ad before entering game
             }
             launchFullscreenGame();
         }
@@ -531,7 +531,7 @@
                     recordCoinHistory(`🚀 Level ${level} Up Bonus`, 50);
                     tg.showAlert(`🚀 LEVEL UP! Reached Level ${level}! (+50 Bonus Coins)`);
                     
-                    triggerAdFromGame(false); // Auto ad on Level Up
+                    triggerAdFromGame(false); // Auto Ad on Level Up
 
                     speed = Math.max(45, speed - 15);
                     clearInterval(gameLoop);
@@ -639,7 +639,7 @@
             isRunning = false;
             tg.showAlert(`💥 Game Over!\nScore: ${score}\nLevel Reached: ${level}`);
             exitFullscreenGame();
-            triggerAdFromGame(false); // Auto ad on Game Over
+            triggerAdFromGame(false); // Auto Ad on Game Over (Game hone ke baad, beech me nahi)
         }
 
         function triggerAdFromGame(rewardCoins = true) {
@@ -654,15 +654,15 @@
             }
 
             if (typeof show_11447350 === 'function') {
-                show_11447350().then(() => {
+                show_11447350('pop').then(() => {
                     if (rewardCoins) {
                         gameCoins += 100;
                         userRef.child('gameCoins').set(gameCoins);
                         recordCoinHistory('🎥 Watched Ad', 100);
                         tg.showAlert("🎉 100 Coins added!");
                     }
-                }).catch(() => {
-                    console.log("Ad skipped or failed");
+                }).catch((e) => {
+                    console.log("Ad skipped or failed", e);
                 });
             } else {
                 if (rewardCoins) {
