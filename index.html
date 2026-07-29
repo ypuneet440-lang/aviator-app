@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Snake Earn - Realistic Graphics Game</title>
+    <title>Snake Earn - Fullscreen Mode</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -24,7 +24,67 @@
         .card-center { text-align: center; }
         .balance-text { font-size: 20px; color: #22c55e; font-weight: bold; }
 
-        /* Full Screen Canvas Container */
+        /* FULLSCREEN OVERLAY CSS */
+        #fullscreenGameOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #020617;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+        }
+        #fullscreenGameOverlay.active { display: flex; }
+
+        .fullscreen-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .exit-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Fullscreen Canvas Styling */
+        #fsGameCanvas {
+            background: #020617;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            touch-action: none;
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+        }
+
+        /* Mini Banner Ad space placeholder on top */
+        .mini-banner {
+            background: #1e293b;
+            color: #64748b;
+            font-size: 10px;
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
         .game-container { width: 100%; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         #gameCanvas { background: #020617; border-radius: 12px; border: 2px solid #334155; touch-action: none; display: block; width: 100%; max-width: 360px; height: auto; aspect-ratio: 1 / 1; }
         .stats-bar { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px; color: #38bdf8; font-size: 15px; width: 100%; max-width: 360px; }
@@ -49,13 +109,15 @@
 </head>
 <body>
 
+    <!-- Top Mini Banner Ad Space -->
+    <div class="mini-banner">📢 SPONSORED ADVERTISEMENT SPACE</div>
+
     <!-- Tab Navigation -->
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('gamePage', this)">🐍 Snake</button>
         <button class="tab-btn" onclick="switchTab('referPage', this)">🤝 Refer</button>
         <button class="tab-btn" onclick="switchTab('withdrawPage', this)">💳 Withdraw</button>
         <button class="tab-btn" onclick="switchTab('supportPage', this)">💬 Support</button>
-        <!-- Admin Button (Hidden by default) -->
         <button class="tab-btn" id="adminTabBtn" style="display:none;" onclick="switchTab('adminPage', this)">⚙️ Admin</button>
     </div>
 
@@ -66,23 +128,31 @@
         <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">(10,000 Coins = ₹10.00)</div>
     </div>
 
-    <!-- PAGE 1: REALISTIC SNAKE GAME -->
+    <!-- PAGE 1: NORMAL LOBBY -->
     <div id="gamePage" class="page active">
         <div class="card card-center">
-            <div class="game-container">
-                <div class="stats-bar">
-                    <div>🏆 Score: <span id="gameScore">0</span></div>
-                    <div>⚡ Level: <span id="gameLevel">1</span></div>
-                </div>
-                
-                <canvas id="gameCanvas" width="400" height="400"></canvas>
-            </div>
-
-            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">👉 Screen par Swipe (Up/Down/Left/Right) karke Snake ko chalayein!</p>
-
-            <button id="startBtn" class="btn btn-bet" onclick="startSnakeGame()">🎮 START GAME</button>
+            <h3>🐍 Realistic Snake Master</h3>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">
+                Game shuru karne ke liye niche button dabayein. Game full-screen mode me khulega aur aap swipe karke khel sakenge!
+            </p>
+            <button class="btn btn-bet" onclick="launchFullscreenGame()">🎮 START FULLSCREEN GAME</button>
         </div>
         <button class="btn btn-ad" onclick="triggerAdFromGame()">🎥 Watch Ad (+100 Coins)</button>
+    </div>
+
+    <!-- FULLSCREEN GAMEPLAY OVERLAY -->
+    <div id="fullscreenGameOverlay">
+        <div class="fullscreen-header">
+            <div>🏆 Score: <span id="fsScore">0</span> | ⚡ Lvl: <span id="fsLevel">1</span></div>
+            <button class="exit-btn" onclick="exitFullscreenGame()">❌ BACK / EXIT</button>
+        </div>
+
+        <!-- Canvas for Fullscreen -->
+        <canvas id="fsGameCanvas" width="400" height="400"></canvas>
+
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">
+            👉 Swipe anywhere to control snake. No ads will disturb your gameplay!
+        </div>
     </div>
 
     <!-- PAGE 2: REFER & EARN -->
@@ -160,7 +230,6 @@
 
         const startParam = tg.initDataUnsafe?.start_param || "";
 
-        // MONETAG ADS INITIALIZATION & ADMIN CHECK
         window.addEventListener('load', () => {
             if (typeof show_11447350 === 'function') {
                 show_11447350({ 
@@ -197,7 +266,6 @@
 
         let userCoins = 0;
 
-        // USER DATA & AUTOMATIC REFERRAL TRACKING
         const userRef = db.ref('users/' + userId);
         userRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -241,8 +309,8 @@
             tg.showAlert("Referral link copied!");
         }
 
-        // ================= REALISTIC SNAKE GAME ENGINE =================
-        const canvas = document.getElementById('gameCanvas');
+        // ================= FULLSCREEN REALISTIC SNAKE GAME ENGINE =================
+        const canvas = document.getElementById('fsGameCanvas');
         const ctx = canvas.getContext('2d');
         const gridSize = 20; 
         const tileCount = canvas.width / gridSize;
@@ -256,17 +324,26 @@
         let gameLoop = null;
         let isRunning = false;
 
-        function startSnakeGame() {
-            if(isRunning) return;
+        function launchFullscreenGame() {
+            document.getElementById('fullscreenGameOverlay').classList.add('active');
+            startFullscreenSnakeGame();
+        }
+
+        function exitFullscreenGame() {
+            clearInterval(gameLoop);
+            isRunning = false;
+            document.getElementById('fullscreenGameOverlay').classList.remove('active');
+        }
+
+        function startFullscreenSnakeGame() {
             snake = [{x: 10, y: 10}];
             dx = 1; dy = 0;
             score = 0;
             level = 1;
             speed = 140;
             isRunning = true;
-            document.getElementById('gameScore').innerText = score;
-            document.getElementById('gameLevel').innerText = level;
-            document.getElementById('startBtn').innerText = "🎮 PLAYING (SWIPE TO CONTROL)...";
+            document.getElementById('fsScore').innerText = score;
+            document.getElementById('fsLevel').innerText = level;
             spawnFood();
             
             if(gameLoop) clearInterval(gameLoop);
@@ -281,7 +358,7 @@
             if (dir === 'RIGHT' && dx === 0) { dx = 1; dy = 0; }
         }
 
-        // --- TOUCH SWIPE CONTROLS LOGIC ---
+        // Touch Swipe Controls for Fullscreen Canvas
         let touchStartX = 0;
         let touchStartY = 0;
 
@@ -311,13 +388,6 @@
                     else changeDirection('UP');
                 }
             }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') changeDirection('UP');
-            if (e.key === 'ArrowDown') changeDirection('DOWN');
-            if (e.key === 'ArrowLeft') changeDirection('LEFT');
-            if (e.key === 'ArrowRight') changeDirection('RIGHT');
         });
 
         function spawnFood() {
@@ -358,8 +428,8 @@
                     gameLoop = setInterval(updateSnakeGame, speed);
                 }
 
-                document.getElementById('gameScore').innerText = score;
-                document.getElementById('gameLevel').innerText = level;
+                document.getElementById('fsScore').innerText = score;
+                document.getElementById('fsLevel').innerText = level;
                 spawnFood();
             } else {
                 snake.pop();
@@ -368,18 +438,15 @@
             drawSnakeGame();
         }
 
-        // --- REALISTIC GRAPHICS DRAWING LOGIC ---
         function drawSnakeGame() {
-            // Dark Background
             ctx.fillStyle = '#020617';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 1. DRAW REALISTIC APPLE (FOOD)
+            // 1. DRAW REALISTIC APPLE
             const foodX = food.x * gridSize + gridSize/2;
             const foodY = food.y * gridSize + gridSize/2;
             const radius = gridSize/2 - 1;
 
-            // Apple Gradient
             let appleGrad = ctx.createRadialGradient(foodX - 2, foodY - 2, 2, foodX, foodY, radius);
             appleGrad.addColorStop(0, '#f87171');
             appleGrad.addColorStop(1, '#dc2626');
@@ -389,20 +456,17 @@
             ctx.arc(foodX, foodY, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Apple Leaf
             ctx.fillStyle = '#22c55e';
             ctx.beginPath();
             ctx.ellipse(foodX + 3, foodY - radius, 3, 1.5, Math.PI / 4, 0, Math.PI * 2);
             ctx.fill();
 
-            // 2. DRAW REALISTIC SNAKE
+            // 2. DRAW REALISTIC SNAKE WITH EYES AND TONGUE
             snake.forEach((part, index) => {
                 const px = part.x * gridSize + gridSize/2;
                 const py = part.y * gridSize + gridSize/2;
 
                 if (index === 0) {
-                    // === SNAKE HEAD WITH EYES & TONGUE ===
-                    // Head Gradient
                     let headGrad = ctx.createRadialGradient(px, py, 2, px, py, gridSize/2);
                     headGrad.addColorStop(0, '#38bdf8');
                     headGrad.addColorStop(1, '#0284c7');
@@ -412,48 +476,35 @@
                     ctx.arc(px, py, gridSize/2, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Calculate Eye offsets based on direction
-                    let leftEyeX = px, leftEyeY = py;
-                    let rightEyeX = px, rightEyeY = py;
+                    let leftEyeX = px, leftEyeY = py, rightEyeX = px, rightEyeY = py;
                     let tongueX1 = px, tongueY1 = py, tongueX2 = px, tongueY2 = py;
 
-                    if (dx === 1) { // Facing Right
-                        leftEyeX = px + 3; leftEyeY = py - 5;
-                        rightEyeX = px + 3; rightEyeY = py + 5;
-                        tongueX1 = px + 10; tongueY1 = py;
-                        tongueX2 = px + 15; tongueY2 = py;
-                    } else if (dx === -1) { // Facing Left
-                        leftEyeX = px - 3; leftEyeY = py - 5;
-                        rightEyeX = px - 3; rightEyeY = py + 5;
-                        tongueX1 = px - 10; tongueY1 = py;
-                        tongueX2 = px - 15; tongueY2 = py;
-                    } else if (dy === 1) { // Facing Down
-                        leftEyeX = px - 5; leftEyeY = py + 3;
-                        rightEyeX = px + 5; rightEyeY = py + 3;
-                        tongueX1 = px; tongueY1 = py + 10;
-                        tongueX2 = px; tongueY2 = py + 15;
-                    } else if (dy === -1) { // Facing Up
-                        leftEyeX = px - 5; leftEyeY = py - 3;
-                        rightEyeX = px + 5; rightEyeY = py - 3;
-                        tongueX1 = px; tongueY1 = py - 10;
-                        tongueX2 = px; tongueY2 = py - 15;
+                    if (dx === 1) { 
+                        leftEyeX = px + 3; leftEyeY = py - 5; rightEyeX = px + 3; rightEyeY = py + 5;
+                        tongueX1 = px + 10; tongueY1 = py; tongueX2 = px + 15; tongueY2 = py;
+                    } else if (dx === -1) { 
+                        leftEyeX = px - 3; leftEyeY = py - 5; rightEyeX = px - 3; rightEyeY = py + 5;
+                        tongueX1 = px - 10; tongueY1 = py; tongueX2 = px - 15; tongueY2 = py;
+                    } else if (dy === 1) { 
+                        leftEyeX = px - 5; leftEyeY = py + 3; rightEyeX = px + 5; rightEyeY = py + 3;
+                        tongueX1 = px; tongueY1 = py + 10; tongueX2 = px; tongueY2 = py + 15;
+                    } else if (dy === -1) { 
+                        leftEyeX = px - 5; leftEyeY = py - 3; rightEyeX = px + 5; rightEyeY = py - 3;
+                        tongueX1 = px; tongueY1 = py - 10; tongueX2 = px; tongueY2 = py - 15;
                     }
 
-                    // Draw White Eyes
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.arc(leftEyeX, leftEyeY, 3, 0, Math.PI * 2);
                     ctx.arc(rightEyeX, rightEyeY, 3, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Draw Black Pupils
                     ctx.fillStyle = '#000000';
                     ctx.beginPath();
                     ctx.arc(leftEyeX, leftEyeY, 1.5, 0, Math.PI * 2);
                     ctx.arc(rightEyeX, rightEyeY, 1.5, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Draw Forked Red Tongue
                     ctx.strokeStyle = '#ef4444';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -463,7 +514,6 @@
                     ctx.stroke();
 
                 } else {
-                    // === SNAKE BODY SEGMENTS ===
                     let bodyGrad = ctx.createRadialGradient(px, py, 1, px, py, gridSize/2 - 1);
                     bodyGrad.addColorStop(0, '#4ade80');
                     bodyGrad.addColorStop(1, '#15803d');
@@ -479,10 +529,13 @@
         function gameOver() {
             clearInterval(gameLoop);
             isRunning = false;
-            document.getElementById('startBtn').innerText = "🔄 RESTART GAME";
             tg.showAlert(`💥 Game Over!\nScore: ${score}\nLevel Reached: ${level}`);
             
-            setTimeout(() => { triggerAdFromGame(false); }, 500);
+            // Trigger Ad after Game Over
+            setTimeout(() => { 
+                exitFullscreenGame();
+                triggerAdFromGame(false); 
+            }, 500);
         }
 
         function triggerAdFromGame(rewardCoins = true) {
