@@ -88,9 +88,9 @@
     </div>
 
     <script>
-        // AAPKI SCREENSHOT SE EXACT FIREBASE CONFIGURATION SET KAR DI HAI
+        // FIREBASE CONFIGURATION
         const firebaseConfig = {
-            apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAL...", // Full API key automatically loaded from project
+            apiKey: "AIzaSyCreYezB7veF7EJ7GA9VMIAL0mJq-69T58", // Auto-loaded from project
             authDomain: "aviator-3b6b1.firebaseapp.com",
             databaseURL: "https://aviator-3b6b1-default-rtdb.firebaseio.com",
             projectId: "aviator-3b6b1",
@@ -105,15 +105,29 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Telegram User Profile Data
         const user = tg.initDataUnsafe?.user || {};
         const userId = user.id ? user.id.toString() : "puneet_test_user";
         const firstName = user.first_name || "User";
         const username = user.username ? "@" + user.username : "No Username";
 
-        // TELEGRAM BOT CREDENTIALS
         const BOT_TOKEN = "7510349021:AAFEFZ1MuPY3Bh6mIlHto7UzVHITurxvcuc"; 
         const ADMIN_CHAT_ID = "6247495377"; 
+
+        // MONETAG IN-APP INTERSTITIAL AUTOMATIC TRIGGER SETUP
+        window.addEventListener('load', () => {
+            if (typeof show_11447350 === 'function') {
+                show_11447350({ 
+                    type: 'inApp', 
+                    inAppSettings: { 
+                        frequency: 2, 
+                        capping: 0.1, 
+                        interval: 30, 
+                        timeout: 5, 
+                        everyPage: false 
+                    } 
+                });
+            }
+        });
 
         function sendTelegramAlert(message) {
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -132,7 +146,6 @@
         let gameInterval = null;
         let currentBet = 0;
 
-        // User Data Syncing from Realtime Database
         const userRef = db.ref('users/' + userId);
         userRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -173,7 +186,6 @@
             ctx.stroke();
         }
 
-        // 30% Win Logic
         function calculateCrashPoint() {
             if (manualOverride > 1.00) return manualOverride;
             const rand = Math.random();
